@@ -341,7 +341,7 @@
   }
 
   function mixedMarkup(display, changed) {
-    return '<div class="mixed-countdown ' + (changed ? "is-changing" : "") + '" aria-label="' + escapeAttr(display.longLabel) + '">' +
+    return '<div class="mixed-countdown ' + (changed ? "is-changing" : "") + '" data-parts="' + display.parts.length + '" aria-label="' + escapeAttr(display.longLabel) + '">' +
       display.parts.map((part, index) => {
         const joiner = index ? '<span class="mixed-plus" aria-hidden="true">+</span>' : "";
         return joiner + '<span class="mixed-part" data-rank="' + index + '"><strong>' + escapeHtml(part.value) + '</strong><em>' + escapeHtml(part.label) + '</em></span>';

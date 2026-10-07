@@ -449,22 +449,30 @@ body.is-dragging-order .drag-grip {
   position: relative;
   z-index: 1;
   display: flex;
-  flex-wrap: wrap;
-  align-items: end;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 8px 0 4px;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: 8px 0 6px;
 }
 .mixed-countdown.is-changing {
   animation: numberPop 340ms cubic-bezier(.2,1.5,.36,1);
 }
 .mixed-part {
   display: grid;
+  justify-items: center;
   gap: 2px;
-  align-content: end;
-  min-width: 0;
+  align-content: center;
+  text-align: center;
+  flex: 0 0 auto;
+  min-width: max-content;
 }
 .mixed-part strong {
   display: block;
+  justify-self: center;
   color: var(--ink);
   font-weight: 1000;
   line-height: 0.78;
@@ -473,11 +481,14 @@ body.is-dragging-order .drag-grip {
   font-size: clamp(4.6rem, 25vw, 10rem);
 }
 .mixed-part em {
+  display: block;
+  justify-self: center;
   color: var(--muted);
   font-style: normal;
   font-size: clamp(0.9rem, 3.5vw, 1.45rem);
   font-weight: 950;
   line-height: 1;
+  white-space: nowrap;
 }
 .mixed-part[data-rank="1"] strong { font-size: clamp(3.1rem, 16vw, 6.2rem); }
 .mixed-part[data-rank="2"] strong { font-size: clamp(2.35rem, 11vw, 4.5rem); }
@@ -493,7 +504,42 @@ body.is-dragging-order .drag-grip {
   color: var(--accent);
   font-size: clamp(1.3rem, 6vw, 2.2rem);
   font-weight: 1000;
-  transform: translateY(-0.15em);
+  line-height: 1;
+  transform: translateY(-0.34em);
+  flex: 0 0 auto;
+}
+.mixed-countdown[data-parts="4"],
+.mixed-countdown[data-parts="5"],
+.mixed-countdown[data-parts="6"] {
+  gap: 5px;
+}
+.mixed-countdown[data-parts="5"] .mixed-part strong,
+.mixed-countdown[data-parts="6"] .mixed-part strong {
+  font-size: clamp(3.25rem, 18vw, 7.4rem);
+}
+.mixed-countdown[data-parts="5"] .mixed-part[data-rank="1"] strong,
+.mixed-countdown[data-parts="6"] .mixed-part[data-rank="1"] strong {
+  font-size: clamp(2.2rem, 11vw, 4.7rem);
+}
+.mixed-countdown[data-parts="5"] .mixed-part[data-rank="2"] strong,
+.mixed-countdown[data-parts="6"] .mixed-part[data-rank="2"] strong {
+  font-size: clamp(1.75rem, 8.4vw, 3.5rem);
+}
+.mixed-countdown[data-parts="5"] .mixed-part[data-rank="3"] strong,
+.mixed-countdown[data-parts="5"] .mixed-part[data-rank="4"] strong,
+.mixed-countdown[data-parts="5"] .mixed-part[data-rank="5"] strong,
+.mixed-countdown[data-parts="6"] .mixed-part[data-rank="3"] strong,
+.mixed-countdown[data-parts="6"] .mixed-part[data-rank="4"] strong,
+.mixed-countdown[data-parts="6"] .mixed-part[data-rank="5"] strong {
+  font-size: clamp(1.32rem, 6.1vw, 2.45rem);
+}
+.mixed-countdown[data-parts="5"] .mixed-part em,
+.mixed-countdown[data-parts="6"] .mixed-part em {
+  font-size: clamp(0.56rem, 2vw, 0.78rem);
+}
+.mixed-countdown[data-parts="5"] .mixed-plus,
+.mixed-countdown[data-parts="6"] .mixed-plus {
+  font-size: clamp(0.9rem, 4.3vw, 1.6rem);
 }
 .mini-actions {
   display: grid;
