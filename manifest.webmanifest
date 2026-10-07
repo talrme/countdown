@@ -9,9 +9,9 @@
   "theme_color": "#177ddc",
   "icons": [
     {
-      "src": "assets/countdown-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "countdown-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

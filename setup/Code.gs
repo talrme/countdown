@@ -19,9 +19,10 @@ const DEFAULT_BOARDS = [
 ];
 
 const DEFAULT_EVENTS = [
-  ['evt_bari_birthday', 'bari', "Bari's birthday", '2027-02-14', '', 'America/Los_Angeles', 'days', '🎂', 'birthday', 1, '', '', false],
-  ['evt_dad_birthday', 'bari', "Dad's birthday", '2027-05-02', '', 'America/Los_Angeles', 'months', '🎈', 'birthday', 2, '', '', false],
-  ['evt_camp', 'bari', 'Camp starts', '2027-06-21', '09:00', 'America/Los_Angeles', 'days', '🏕️', 'camp', 3, '', '', false]
+  ['evt_bari_birthday', 'bari', "Bari's birthday", '2027-09-13', '', 'America/Los_Angeles', 'auto', '🎂', 'birthday', 1, '', '', false],
+  ['evt_new_year_2027', 'bari', "New Year's Day", '2027-01-01', '', 'America/Los_Angeles', 'auto', '🎆', 'holiday', 2, '', '', false],
+  ['evt_leap_day_2028', 'bari', 'Leap Day', '2028-02-29', '', 'America/Los_Angeles', 'auto', '🐸', 'calendar', 3, '', '', false],
+  ['evt_halley_comet', 'bari', "Halley's Comet returns", '2061-07-28', '', 'America/Los_Angeles', 'auto', '☄️', 'space', 4, '', '', false]
 ];
 
 function doGet(e) {

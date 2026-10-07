@@ -7,12 +7,14 @@ A kid-friendly countdown board for birthdays, trips, camp starts, and other big 
 ## What It Does
 
 - Shows a main countdown card for the next big event
+- Chooses a sensible default unit automatically based on how far away the event is
 - Lets you switch units between years, months, weeks, days, hours, minutes, seconds, and mixed
+- Shows expanded countdowns in the same big-card style as the main countdown
 - Automatically resizes large values so seconds and minutes still fit on phones
 - Supports multiple boards through a URL parameter, such as `?board=bari`
-- Lets anyone with the page add, edit, delete, and reorder countdowns locally
+- Lets anyone with the page add, edit, delete, and reorder countdowns
 - Includes settings for board selection, new boards, deleting boards, and color mood
-- Includes a Share / Save modal with copy-link and home-screen instructions
+- Includes a Share / Save modal with copy-link and home-screen instructions that preserve the current board link
 - Saves edits in this browser immediately, even before a backend is connected
 - Shows backend sync status in Settings -> Advanced
 

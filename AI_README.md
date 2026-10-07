@@ -13,6 +13,8 @@
 
 This is primarily kid-facing. Keep the UI playful, tactile, animated, and very readable on phones. Parent/admin controls should exist but remain secondary.
 
+Expanded secondary countdowns should reuse the same big-card pattern as the primary countdown. The default unit can be \`auto\`, which lets the app choose years/months/weeks/days/hours/minutes/seconds based on distance from the event.
+
 ## Data Contract
 
 Boards:

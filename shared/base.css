@@ -120,28 +120,32 @@ button {
   transition: transform 160ms ease;
 }
 .add-button:hover { transform: rotate(-5deg) scale(1.04); }
-.hero-card {
+.hero-card,
+.expanded-countdown {
   position: relative;
   overflow: hidden;
-  min-height: min(66vh, 600px);
+  min-height: min(54vh, 500px);
   border: 2px solid var(--line);
   border-radius: calc(var(--radius) + 8px);
   background: var(--paper);
   box-shadow: var(--shadow);
-  padding: clamp(16px, 4vw, 30px);
+  padding: clamp(15px, 3.5vw, 26px);
   display: grid;
   align-content: space-between;
-  gap: 18px;
+  gap: 14px;
 }
 .hero-card::before,
-.hero-card::after {
+.hero-card::after,
+.expanded-countdown::before,
+.expanded-countdown::after {
   content: "";
   position: absolute;
   border-radius: 999px;
   pointer-events: none;
   opacity: 0.55;
 }
-.hero-card::before {
+.hero-card::before,
+.expanded-countdown::before {
   width: 180px;
   height: 180px;
   right: -70px;
@@ -149,7 +153,8 @@ button {
   background: var(--accent-2);
   animation: floaty 5s ease-in-out infinite;
 }
-.hero-card::after {
+.hero-card::after,
+.expanded-countdown::after {
   width: 110px;
   height: 110px;
   left: -42px;
@@ -183,7 +188,7 @@ button {
 }
 .hero-title {
   margin: 0;
-  font-size: clamp(2rem, 11vw, 5rem);
+  font-size: clamp(1.9rem, 9vw, 4.35rem);
   line-height: 0.92;
   max-width: 780px;
 }
@@ -194,7 +199,7 @@ button {
 }
 .big-number {
   display: block;
-  font-size: clamp(5.6rem, 34vw, 15rem);
+  font-size: clamp(5rem, 29vw, 12.5rem);
   font-weight: 1000;
   line-height: 0.78;
   letter-spacing: 0;
@@ -203,22 +208,32 @@ button {
   transform-origin: center;
 }
 .big-number[data-fit="compact"] {
-  font-size: clamp(4.7rem, 24vw, 12rem);
+  font-size: clamp(4.2rem, 22vw, 10.5rem);
 }
 .big-number[data-fit="dense"] {
-  font-size: clamp(3.6rem, 18vw, 9rem);
+  font-size: clamp(3.2rem, 16vw, 8rem);
 }
 .big-number[data-fit="ultra"] {
-  font-size: clamp(2.75rem, 14vw, 7rem);
+  font-size: clamp(2.35rem, 12vw, 6rem);
+}
+.big-number[data-fit="mega"] {
+  font-size: clamp(1.9rem, 9vw, 4.5rem);
 }
 .big-number.is-changing { animation: numberPop 340ms cubic-bezier(.2,1.5,.36,1); }
 .unit-label {
   display: block;
   margin-top: 8px;
   color: var(--muted);
-  font-size: clamp(1.2rem, 6vw, 2.2rem);
+  font-size: clamp(1.05rem, 4.6vw, 1.9rem);
   font-weight: 950;
   text-transform: uppercase;
+  line-height: 1.06;
+}
+.unit-label[data-fit="dense"],
+.unit-label[data-fit="ultra"],
+.unit-label[data-fit="mega"] {
+  font-size: clamp(0.8rem, 3.4vw, 1.25rem);
+  text-transform: none;
 }
 .status-line {
   min-height: 1.4em;
@@ -322,17 +337,73 @@ button {
   display: grid;
   gap: 10px;
 }
-.mini-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
+.expanded-countdown {
+  min-height: 0;
+  padding: clamp(13px, 3vw, 22px);
 }
-.mini-actions button {
+.expanded-countdown .event-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 15px;
+  font-size: 1.45rem;
+}
+.expanded-countdown .event-kicker {
+  font-size: 0.86rem;
+}
+.expanded-countdown .hero-title {
+  font-size: clamp(1.55rem, 6.6vw, 3.05rem);
+}
+.expanded-countdown .big-number {
+  font-size: clamp(3.7rem, 21vw, 8.5rem);
+}
+.expanded-countdown .big-number[data-fit="compact"] {
+  font-size: clamp(3.15rem, 17vw, 7rem);
+}
+.expanded-countdown .big-number[data-fit="dense"] {
+  font-size: clamp(2.6rem, 13vw, 5.75rem);
+}
+.expanded-countdown .big-number[data-fit="ultra"] {
+  font-size: clamp(2.05rem, 10vw, 4.7rem);
+}
+.expanded-countdown .big-number[data-fit="mega"] {
+  font-size: clamp(1.65rem, 8vw, 3.9rem);
+}
+.expanded-countdown .status-line {
+  font-size: 0.98rem;
+}
+.mini-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.icon-action {
   border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--paper);
-  padding: 7px 10px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--paper) 86%, var(--accent-3));
+  padding: 8px 6px;
   font-weight: 900;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  transition: transform 160ms ease, background 160ms ease;
+}
+.icon-action:hover {
+  transform: translateY(-2px);
+}
+.icon-action span {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+.icon-action small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 950;
+}
+.danger-action {
+  background: color-mix(in srgb, var(--paper) 76%, #ffb1bf);
+}
+.confirm-card {
+  max-width: 430px;
 }
 .bottom-tools {
   display: flex;
@@ -547,8 +618,12 @@ summary {
     padding-top: 4px;
   }
   .hero-card {
-    min-height: min(620px, calc(100svh - 150px));
+    min-height: min(520px, calc(100svh - 170px));
     padding: 14px;
+  }
+  .expanded-countdown {
+    min-height: 0;
+    padding: 12px;
   }
   .unit-row {
     display: grid;
@@ -562,6 +637,16 @@ summary {
     min-height: 36px;
     padding: 0 5px;
     font-size: 0.76rem;
+  }
+  .expanded-countdown .unit-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .expanded-countdown .unit-row button {
+    font-size: 0.7rem;
+    min-height: 34px;
+  }
+  .mini-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .title-button strong {
     font-size: clamp(1.3rem, 7.4vw, 2.1rem);

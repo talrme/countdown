@@ -7,8 +7,8 @@
   <meta name="description" content="A playful countdown board for birthdays, trips, camp, and big days.">
   <meta name="theme-color" content="#eaf8ff">
   <meta name="apple-mobile-web-app-title" content="Countdown">
-  <link rel="icon" href="assets/countdown-icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="assets/countdown-icon.svg">
+  <link rel="icon" href="countdown-icon.png" type="image/png">
+  <link rel="apple-touch-icon" href="countdown-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="shared/base.css">
   <link rel="stylesheet" href="styles.css">
@@ -25,7 +25,7 @@
       </button>
     </header>
 
-    <section class="hero-card" data-hero-card aria-live="polite"></section>
+    <section class="hero-card countdown-card" data-hero-card aria-live="polite"></section>
 
     <section class="event-section">
       <div class="section-title-row">
@@ -80,9 +80,11 @@
         <label>
           <span>Default unit</span>
           <select name="default_unit">
+            <option value="auto">Auto</option>
             <option value="days">Days</option>
             <option value="months">Months</option>
             <option value="weeks">Weeks</option>
+            <option value="years">Years</option>
             <option value="hours">Hours</option>
             <option value="minutes">Minutes</option>
             <option value="seconds">Seconds</option>
@@ -163,6 +165,23 @@
           <strong>Android</strong>
           <p>Open in Chrome, tap the menu, then Add to Home screen or Install app.</p>
         </section>
+      </div>
+    </div>
+  </section>
+
+  <section class="modal-panel confirm-modal" data-confirm-modal hidden role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="modal-card confirm-card">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">Just checking</p>
+          <h2 id="confirm-title" data-confirm-title>Delete countdown?</h2>
+        </div>
+        <button type="button" class="x-button" data-cancel-delete aria-label="Close">×</button>
+      </header>
+      <p class="small-copy">This removes it from this board for everyone once the Sheet syncs.</p>
+      <div class="modal-actions">
+        <button type="button" data-cancel-delete>Keep it</button>
+        <button type="button" class="danger" data-confirm-delete>Delete</button>
       </div>
     </div>
   </section>
