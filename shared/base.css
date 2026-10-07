@@ -199,6 +199,16 @@ body[data-theme="night"] .title-button strong {
   background: color-mix(in srgb, var(--accent-2) 42%, white);
   border: 2px solid var(--line);
   font-size: 1.8rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+.event-icon[data-icon-count="2"] {
+  font-size: 1.28rem;
+}
+.event-icon[data-icon-count="3"],
+.event-icon[data-icon-count="4"] {
+  font-size: 0.84rem;
+  letter-spacing: -0.18em;
 }
 .hero-title {
   margin: 0;
@@ -290,10 +300,12 @@ body[data-theme="night"] .title-button strong {
 .event-section {
   display: grid;
   min-width: 0;
+  align-self: start;
 }
 .event-list {
   display: grid;
   gap: 9px;
+  align-content: start;
 }
 .mini-card {
   border: 2px solid var(--line);
@@ -337,9 +349,10 @@ body.drag-order-enabled .mini-summary {
   color: var(--muted);
   cursor: grab;
   font-weight: 1000;
-  line-height: 0.72;
-  letter-spacing: -0.2em;
-  padding-right: 0.2em;
+  line-height: 1;
+  letter-spacing: 0;
+  font-size: 1.35rem;
+  padding: 0;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;

@@ -307,8 +307,8 @@
     const classes = "mini-card event-card" + (opts.primary ? " primary-card" : "") + (open ? " is-open" : "");
     return '<article class="' + classes + '" data-event-card="' + id + '">' +
       '<button type="button" class="mini-summary" data-toggle-card="' + id + '" aria-expanded="' + String(open) + '">' +
-        '<span class="event-icon">' + escapeHtml(event.icon || "⭐") + '</span>' +
-        '<span class="drag-grip" data-drag-grip aria-label="Drag to reorder" role="button">⋮⋮</span>' +
+        eventIconMarkup(event.icon || "⭐") +
+        '<span class="drag-grip" data-drag-grip aria-label="Drag to reorder" role="button">☰</span>' +
         '<strong>' + escapeHtml(event.title) + '</strong>' +
         '<span class="summary-tail">' + escapeHtml(display.short) + '<i aria-hidden="true">' + (open ? "⌃" : "⌄") + '</i></span>' +
       '</button>' +
@@ -331,7 +331,7 @@
     const showIdentity = !(options && options.hideIdentity);
 
     return '<div class="hero-content">' +
-        (showIdentity ? '<div class="event-kicker"><span class="event-icon">' + escapeHtml(event.icon || "⭐") + '</span><span>' + escapeHtml(formatTarget(event)) + '</span></div><h1 class="hero-title">' + escapeHtml(event.title) + '</h1>' : '<div class="detail-date">' + escapeHtml(formatTarget(event)) + '</div>') +
+        (showIdentity ? '<div class="event-kicker">' + eventIconMarkup(event.icon || "⭐") + '<span>' + escapeHtml(formatTarget(event)) + '</span></div><h1 class="hero-title">' + escapeHtml(event.title) + '</h1>' : '<div class="detail-date">' + escapeHtml(formatTarget(event)) + '</div>') +
         (display.kind === "mixed" ? mixedMarkup(display, changed) : '<div class="number-wrap"><strong class="big-number ' + (changed ? "is-changing" : "") + '" data-fit="' + fitForBigText(display.big) + '">' + escapeHtml(display.big) + '</strong><span class="unit-label" data-fit="' + fitForBigText(display.unit) + '">' + escapeHtml(display.unit) + '</span></div>') +
         (display.note ? '<p class="status-line">' + escapeHtml(display.note) + '</p>' : "") +
       '</div>' +
@@ -362,6 +362,20 @@
       '<button type="button" class="icon-action" data-move-event="' + id + '" data-dir="1" aria-label="Move down"' + downDisabled + '><span aria-hidden="true">↓</span><small>Down</small></button>' +
       '<button type="button" class="icon-action danger-action" data-open-delete="' + id + '" aria-label="Delete ' + title + '"><span aria-hidden="true">×</span><small>Delete</small></button>' +
     '</div>';
+  }
+
+  function eventIconMarkup(icon) {
+    const text = String(icon || "⭐").trim() || "⭐";
+    return '<span class="event-icon" data-icon-count="' + iconCount(text) + '">' + escapeHtml(text) + '</span>';
+  }
+
+  function iconCount(icon) {
+    const text = String(icon || "").trim();
+    if (!text) return 1;
+    if (typeof Intl !== "undefined" && Intl.Segmenter) {
+      return Math.min(4, Array.from(new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text)).filter((part) => part.segment.trim()).length || 1);
+    }
+    return Math.min(4, Array.from(text).filter((part) => part.trim()).length || 1);
   }
 
   function renderBoardSelect() {
@@ -651,6 +665,7 @@
     const form = els.eventForm;
     const id = form.event_id.value || "evt_" + Date.now().toString(36);
     let event = state.events.find((item) => item.event_id === id);
+    const isNew = !event;
     if (!event) {
       event = {
         event_id: id,
@@ -671,6 +686,9 @@
     event.updated_at = new Date().toISOString();
     if (event.default_unit === "auto") delete state.activeUnits[event.event_id];
     else state.activeUnits[event.event_id] = event.default_unit;
+    if (isNew && !state.openEventIds.includes(event.event_id)) {
+      state.openEventIds = state.openEventIds.concat(event.event_id);
+    }
 
     saveState();
     syncEvent(event);
@@ -711,15 +729,19 @@
     const index = events.findIndex((event) => event.event_id === id);
     const next = index + dir;
     if (index < 0 || next < 0 || next >= events.length) return;
-    const a = events[index];
-    const b = events[next];
-    const aOrder = a.sort_order;
-    a.sort_order = b.sort_order;
-    b.sort_order = aOrder;
-    a.updated_at = b.updated_at = new Date().toISOString();
+    const [event] = events.splice(index, 1);
+    events.splice(next, 0, event);
+    const changed = [];
+    events.forEach((item, orderIndex) => {
+      if (item.sort_order !== orderIndex + 1) {
+        item.sort_order = orderIndex + 1;
+        item.updated_at = new Date().toISOString();
+        changed.push(item);
+      }
+    });
+    if (!changed.length) return;
     saveState();
-    syncEvent(a);
-    syncEvent(b);
+    changed.forEach(syncEvent);
     startSyncWindow(syncWindowMs);
     render();
   }
@@ -924,6 +946,11 @@
     document.body.classList.remove("is-dragging-order");
     document.body.classList.remove("is-pressing-order");
     state.drag = null;
+    if (state.suppressNextClick) {
+      window.setTimeout(() => {
+        state.suppressNextClick = false;
+      }, 180);
+    }
   }
 
   function addBoard() {
