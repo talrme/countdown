@@ -4,7 +4,13 @@
   const storageKey = "countdown-board-v1";
   const units = ["years", "months", "weeks", "days", "hours", "minutes", "seconds", "mixed"];
   const editableUnits = ["auto"].concat(units);
+  const syncWindowMs = 120000;
+  const syncIntervalMs = 15000;
   let manifestObjectUrl = "";
+  let syncInterval = 0;
+  let syncInFlight = false;
+  let pendingBoards = {};
+  let pendingEvents = {};
 
   const state = {
     boards: [],
@@ -15,7 +21,8 @@
     editingId: "",
     confirmDeleteId: "",
     lastBigText: {},
-    celebratedToday: {}
+    celebratedToday: {},
+    recentSyncUntil: 0
   };
 
   const els = {};
@@ -28,7 +35,8 @@
     bindEvents();
     applyTheme();
     render();
-    requestBackendSnapshot();
+    requestBackendSnapshot({ reason: "load" });
+    startSyncWindow(syncWindowMs);
     window.setInterval(() => {
       renderHeroOnly();
       renderList();
@@ -69,6 +77,11 @@
     const urlBoard = new URL(window.location.href).searchParams.get("board");
     const requestedBoard = urlBoard || state.settings.board || config.defaultBoard || (state.boards[0] && state.boards[0].board_slug) || "bari";
     state.settings.board = boardExists(requestedBoard) ? requestedBoard : (state.boards[0] && state.boards[0].board_slug) || "bari";
+    if (!state.settings.cardUiV2) {
+      const first = sortedEvents()[0];
+      if (!state.openEventIds.length && first) state.openEventIds = [first.event_id];
+      state.settings.cardUiV2 = true;
+    }
     saveState();
     syncUrl();
     updateInstallManifest();
@@ -183,11 +196,28 @@
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") closeModals();
     });
+
+    window.addEventListener("focus", () => {
+      requestBackendSnapshot({ reason: "focus", silent: true });
+      startSyncWindow(60000);
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        requestBackendSnapshot({ reason: "visible", silent: true });
+        startSyncWindow(60000);
+      }
+    });
   }
 
   function render(forceCelebration) {
     const board = currentBoard();
     if (els.boardTitle) els.boardTitle.textContent = board ? board.board_name : "Countdown";
+    if (state.settings.board && !boardExists(state.settings.board)) {
+      const nextBoard = visibleBoards()[0];
+      state.settings.board = nextBoard ? nextBoard.board_slug : "";
+      syncUrl();
+    }
     renderBoardSelect();
     renderHeroOnly(forceCelebration);
     renderList();
@@ -200,13 +230,13 @@
     const main = events[0];
     if (!els.hero) return;
     if (!main) {
-      els.hero.innerHTML = '<div class="hero-content"><h1 class="hero-title">No countdowns yet</h1><p class="status-line">Tap + to add one.</p></div>';
+      els.hero.innerHTML = '<article class="mini-card add-card"><button type="button" class="mini-summary add-summary" data-open-event="new"><span class="event-icon">+</span><strong>Add a countdown</strong><span>go</span></button></article>';
       return;
     }
 
     const unit = activeUnitFor(main);
     const display = displayFor(main, unit);
-    els.hero.innerHTML = countdownCardInner(main, unit, { key: "hero:" + main.event_id, display });
+    els.hero.innerHTML = renderEventCard(main, { primary: true, unit, display });
 
     if (forceCelebration) celebrate(8);
     if (display.kind === "today" && !state.celebratedToday[main.event_id]) {
@@ -219,50 +249,59 @@
     const events = sortedEvents();
     const rest = events.slice(1);
     if (!els.list) return;
-    if (!rest.length) {
-      els.list.innerHTML = '<article class="mini-card"><button type="button" class="mini-summary" data-open-event="new"><span class="event-icon">+</span><strong>Add another countdown</strong><span>go</span></button></article>';
-      return;
-    }
+    const cards = rest.map((event) => renderEventCard(event, { primary: false }));
+    cards.push('<article class="mini-card add-card"><button type="button" class="mini-summary add-summary" data-open-event="new"><span class="event-icon">+</span><strong>Add another countdown</strong><span>go</span></button></article>');
+    els.list.innerHTML = cards.join("");
+  }
 
-    els.list.innerHTML = rest.map((event) => {
-      const unit = activeUnitFor(event);
-      const display = displayFor(event, unit);
-      const open = state.openEventIds.includes(event.event_id);
-      return '<article class="mini-card ' + (open ? "is-open" : "") + '">' +
-        '<button type="button" class="mini-summary" data-toggle-card="' + escapeAttr(event.event_id) + '">' +
-          '<span class="event-icon">' + escapeHtml(event.icon || "⭐") + '</span>' +
-          '<strong>' + escapeHtml(event.title) + '</strong>' +
-          '<span>' + escapeHtml(display.short) + '</span>' +
-        '</button>' +
-        (open ? '<div class="mini-details" id="event-' + escapeAttr(event.event_id) + '">' +
-          '<section class="expanded-countdown countdown-card">' +
-            countdownCardInner(event, unit, { key: "list:" + event.event_id, display }) +
-          '</section>' +
-          eventToolbar(event) +
-        '</div>' : "") +
-      '</article>';
-    }).join("");
+  function renderEventCard(event, options) {
+    const opts = options || {};
+    const unit = opts.unit || activeUnitFor(event);
+    const display = opts.display || displayFor(event, unit);
+    const open = state.openEventIds.includes(event.event_id);
+    const id = escapeAttr(event.event_id);
+    const classes = "mini-card event-card" + (opts.primary ? " primary-card" : "") + (open ? " is-open" : "");
+    return '<article class="' + classes + '">' +
+      '<button type="button" class="mini-summary" data-toggle-card="' + id + '" aria-expanded="' + String(open) + '">' +
+        '<span class="event-icon">' + escapeHtml(event.icon || "⭐") + '</span>' +
+        '<strong>' + escapeHtml(event.title) + '</strong>' +
+        '<span class="summary-tail">' + escapeHtml(display.short) + '<i aria-hidden="true">' + (open ? "⌃" : "⌄") + '</i></span>' +
+      '</button>' +
+      (open ? '<div class="mini-details" id="event-' + id + '">' +
+        '<section class="expanded-countdown countdown-card">' +
+          countdownCardInner(event, unit, { key: (opts.primary ? "hero:" : "list:") + event.event_id, display, hideIdentity: true }) +
+        '</section>' +
+        eventToolbar(event) +
+      '</div>' : "") +
+    '</article>';
   }
 
   function countdownCardInner(event, unit, options) {
     const display = options && options.display ? options.display : displayFor(event, unit);
     const key = options && options.key ? options.key : event.event_id;
+    const displayKey = display.kind === "mixed" ? display.parts.map((part) => part.value).join(":") : display.big;
     const previous = state.lastBigText[key];
-    const changed = previous !== undefined && display.big !== previous;
-    state.lastBigText[key] = display.big;
+    const changed = previous !== undefined && displayKey !== previous;
+    state.lastBigText[key] = displayKey;
+    const showIdentity = !(options && options.hideIdentity);
 
     return '<div class="hero-content">' +
-        '<div class="event-kicker"><span class="event-icon">' + escapeHtml(event.icon || "⭐") + '</span><span>' + escapeHtml(formatTarget(event)) + '</span></div>' +
-        '<h1 class="hero-title">' + escapeHtml(event.title) + '</h1>' +
-        '<div class="number-wrap">' +
-          '<strong class="big-number ' + (changed ? "is-changing" : "") + '" data-fit="' + fitForBigText(display.big) + '">' + escapeHtml(display.big) + '</strong>' +
-          '<span class="unit-label" data-fit="' + fitForBigText(display.unit) + '">' + escapeHtml(display.unit) + '</span>' +
-        '</div>' +
-        '<p class="status-line">' + escapeHtml(display.note) + '</p>' +
+        (showIdentity ? '<div class="event-kicker"><span class="event-icon">' + escapeHtml(event.icon || "⭐") + '</span><span>' + escapeHtml(formatTarget(event)) + '</span></div><h1 class="hero-title">' + escapeHtml(event.title) + '</h1>' : '<div class="detail-date">' + escapeHtml(formatTarget(event)) + '</div>') +
+        (display.kind === "mixed" ? mixedMarkup(display, changed) : '<div class="number-wrap"><strong class="big-number ' + (changed ? "is-changing" : "") + '" data-fit="' + fitForBigText(display.big) + '">' + escapeHtml(display.big) + '</strong><span class="unit-label" data-fit="' + fitForBigText(display.unit) + '">' + escapeHtml(display.unit) + '</span></div>') +
+        (display.note ? '<p class="status-line">' + escapeHtml(display.note) + '</p>' : "") +
       '</div>' +
       '<div class="unit-row" role="group" aria-label="Countdown units">' +
         units.map((candidate) => '<button type="button" data-unit="' + candidate + '" data-unit-event="' + escapeAttr(event.event_id) + '" class="' + (candidate === unit ? "is-active" : "") + '">' + labelForUnit(candidate) + '</button>').join("") +
       '</div>';
+  }
+
+  function mixedMarkup(display, changed) {
+    return '<div class="mixed-countdown ' + (changed ? "is-changing" : "") + '" aria-label="' + escapeAttr(display.longLabel) + '">' +
+      display.parts.map((part, index) => {
+        const joiner = index ? '<span class="mixed-plus" aria-hidden="true">+</span>' : "";
+        return joiner + '<span class="mixed-part" data-rank="' + index + '"><strong>' + escapeHtml(part.value) + '</strong><em>' + escapeHtml(part.label) + '</em></span>';
+      }).join("") +
+    '</div>';
   }
 
   function eventToolbar(event) {
@@ -278,7 +317,7 @@
 
   function renderBoardSelect() {
     if (!els.boardSelect) return;
-    els.boardSelect.innerHTML = state.boards
+    els.boardSelect.innerHTML = visibleBoards()
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((board) => '<option value="' + escapeAttr(board.board_slug) + '">' + escapeHtml(board.board_name) + '</option>')
       .join("");
@@ -298,11 +337,15 @@
   }
 
   function currentBoard() {
-    return state.boards.find((board) => board.board_slug === state.settings.board) || state.boards[0];
+    return visibleBoards().find((board) => board.board_slug === state.settings.board) || visibleBoards()[0];
   }
 
   function boardExists(slugValue) {
     return state.boards.some((board) => board.board_slug === slugValue && !board.deleted);
+  }
+
+  function visibleBoards() {
+    return state.boards.filter((board) => !board.deleted);
   }
 
   function activeUnitFor(event) {
@@ -353,47 +396,40 @@
     if (unit === "years") {
       const years = Math.max(0.1, diff / (365.2425 * dayMs));
       const value = years >= 10 ? String(Math.round(years)) : years.toFixed(1);
-      return { kind: "future", big: value, unit: plural(Number(value), "year"), note: "Counting in years.", short: value + "y" };
+      return { kind: "future", big: value, unit: plural(Number(value), "year"), note: "", short: value + "y" };
     }
 
     if (unit === "months") {
       const value = Math.max(0, months.months);
-      return { kind: "future", big: String(value), unit: plural(value, "month"), note: "Counting in months.", short: value + "mo" };
+      return { kind: "future", big: String(value), unit: plural(value, "month"), note: "", short: value + "mo" };
     }
 
     if (unit === "weeks") {
       const weeks = Math.max(1, Math.ceil(diff / (7 * dayMs)));
-      return { kind: "future", big: String(weeks), unit: plural(weeks, "week"), note: "Counting in weeks.", short: weeks + "w" };
+      return { kind: "future", big: String(weeks), unit: plural(weeks, "week"), note: "", short: weeks + "w" };
     }
 
     if (unit === "hours") {
       const hours = Math.max(1, Math.ceil(diff / hourMs));
-      return { kind: "future", big: String(hours), unit: plural(hours, "hour"), note: "Counting in hours.", short: hours + "h" };
+      return { kind: "future", big: String(hours), unit: plural(hours, "hour"), note: "", short: hours + "h" };
     }
 
     if (unit === "minutes") {
       const minutes = Math.max(1, Math.ceil(diff / minuteMs));
-      return { kind: "future", big: String(minutes), unit: "minutes", note: "Counting in minutes.", short: minutes + "m" };
+      return { kind: "future", big: String(minutes), unit: "minutes", note: "", short: minutes + "m" };
     }
 
     if (unit === "seconds") {
       const seconds = Math.max(1, Math.ceil(diff / secondMs));
-      return { kind: "future", big: String(seconds), unit: "seconds", note: "Counting every second.", short: seconds + "s" };
+      return { kind: "future", big: String(seconds), unit: "seconds", note: "", short: seconds + "s" };
     }
 
     if (unit === "mixed") {
       const mixed = mixedParts(now, target);
-      return { kind: "future", big: mixed.big, unit: mixed.unit, note: mixed.note, short: mixed.short };
+      return { kind: "mixed", big: mixed.big, unit: mixed.unit, note: "", short: mixed.short, parts: mixed.parts, longLabel: mixed.longLabel };
     }
 
-    return { kind: "future", big: String(days), unit: plural(days, "day"), note: friendlyNote(days), short: days + "d" };
-  }
-
-  function friendlyNote(days) {
-    if (days <= 3) return "Very soon.";
-    if (days <= 14) return "Soon-ish.";
-    if (days <= 60) return "Close enough to start asking every day.";
-    return "Still a bit of waiting.";
+    return { kind: "future", big: String(days), unit: plural(days, "day"), note: "", short: days + "d" };
   }
 
   function mixedParts(start, end) {
@@ -402,13 +438,13 @@
       .filter((piece) => piece.value > 0);
     const parts = pieces.length ? pieces : [{ value: 0, label: "seconds", short: "s" }];
     const primary = parts[0];
-    const rest = parts.slice(1).map((piece) => piece.value + " " + piece.label);
-    const tail = rest.length ? " · " + rest.join(" · ") : "";
+    const longLabel = parts.map((piece) => piece.value + " " + piece.label).join(" plus ");
     return {
       big: String(primary.value),
-      unit: primary.label + tail,
-      note: "Mixed countdown.",
-      short: primary.value + primary.short
+      unit: primary.label,
+      parts,
+      longLabel,
+      short: parts.slice(0, 2).map((piece) => piece.value + piece.short).join("+")
     };
   }
 
@@ -502,6 +538,7 @@
     event.updated_at = new Date().toISOString();
     saveState();
     syncEvent(event);
+    startSyncWindow(syncWindowMs);
     render();
   }
 
@@ -510,6 +547,7 @@
     const isOpen = state.openEventIds.includes(id);
     state.openEventIds = isOpen ? state.openEventIds.filter((openId) => openId !== id) : state.openEventIds.concat(id);
     saveState();
+    renderHeroOnly();
     renderList();
     if (!isOpen) {
       window.setTimeout(() => {
@@ -564,6 +602,7 @@
     saveState();
     syncEvent(event);
     closeModals();
+    startSyncWindow(syncWindowMs);
     render(true);
   }
 
@@ -590,6 +629,7 @@
     saveState();
     syncEvent(event);
     closeModals();
+    startSyncWindow(syncWindowMs);
     render();
   }
 
@@ -607,6 +647,7 @@
     saveState();
     syncEvent(a);
     syncEvent(b);
+    startSyncWindow(syncWindowMs);
     render();
   }
 
@@ -626,27 +667,36 @@
     if (els.newBoardName) els.newBoardName.value = "";
     saveState();
     syncBoard(board);
+    startSyncWindow(syncWindowMs);
     syncUrl();
     render(true);
   }
 
   function deleteCurrentBoard() {
-    if (state.boards.length <= 1) return;
+    if (visibleBoards().length <= 1) return;
     const current = currentBoard();
     if (!current) return;
     current.deleted = true;
+    const deletedEvents = [];
     state.events.forEach((event) => {
-      if (event.board_slug === current.board_slug) event.deleted = true;
+      if (event.board_slug === current.board_slug) {
+        event.deleted = true;
+        event.updated_at = new Date().toISOString();
+        deletedEvents.push(event);
+      }
     });
-    const nextBoard = state.boards.find((board) => !board.deleted);
+    const nextBoard = visibleBoards()[0];
     if (!nextBoard) return;
     state.settings.board = nextBoard.board_slug;
     state.openEventIds = [];
     state.activeUnits = {};
+    current.updated_at = new Date().toISOString();
     saveState();
     syncBoard(current);
+    deletedEvents.forEach(syncEvent);
     syncUrl();
     render();
+    startSyncWindow(syncWindowMs);
   }
 
   function uniqueBoardSlug(base) {
@@ -764,33 +814,60 @@
     link.href = manifestObjectUrl;
   }
 
-  function requestBackendSnapshot() {
+  function startSyncWindow(durationMs) {
+    state.recentSyncUntil = Math.max(state.recentSyncUntil || 0, Date.now() + durationMs);
+    if (syncInterval) return;
+    syncInterval = window.setInterval(() => {
+      if (Date.now() > state.recentSyncUntil) {
+        window.clearInterval(syncInterval);
+        syncInterval = 0;
+        return;
+      }
+      requestBackendSnapshot({ reason: "window", silent: true });
+    }, syncIntervalMs);
+  }
+
+  function requestBackendSnapshot(options) {
+    const opts = options || {};
     if (!config.backendUrl) {
       setSyncStatus("Local only. No Apps Script URL is configured.");
-      return;
+      return Promise.resolve();
     }
+    if (syncInFlight) return Promise.resolve();
+    syncInFlight = true;
 
-    setSyncStatus("Checking Sheet sync...");
-    backendRequest("snapshot", {}).then((response) => {
+    if (!opts.silent) setSyncStatus("Checking Sheet sync...");
+    return backendRequest("snapshot", {}).then((response) => {
       if (!response || !response.ok) {
         setSyncStatus("Sheet sync issue: " + (response && response.error ? response.error : "backend did not return ok."));
         return;
       }
-      if (response.boards) state.boards = normalizeBoards(response.boards);
-      if (response.events) state.events = normalizeEvents(response.events);
+      if (response.boards) state.boards = mergePendingBoards(normalizeBoards(response.boards));
+      if (response.events) state.events = mergePendingEvents(normalizeEvents(response.events));
+      if (state.settings.board && !boardExists(state.settings.board)) {
+        const nextBoard = visibleBoards()[0];
+        state.settings.board = nextBoard ? nextBoard.board_slug : "";
+        syncUrl();
+      }
       state.openEventIds = state.openEventIds.filter((id) => state.events.some((event) => event.event_id === id && !event.deleted));
       saveState();
       render();
       setSyncStatus("Sheet sync connected.");
     }).catch(() => {
       setSyncStatus("Sheet sync issue: Apps Script is not reachable. Check Web App access.");
+    }).finally(() => {
+      syncInFlight = false;
     });
   }
 
   function syncEvent(event) {
     if (!config.backendUrl || !event) return;
+    rememberPendingEvent(event);
     backendRequest("upsertEvent", { event }).then((response) => {
-      if (response && response.ok) setSyncStatus("Sheet sync connected.");
+      if (response && response.ok) {
+        setSyncStatus("Sheet sync connected.");
+        requestBackendSnapshot({ reason: "event-save", silent: true });
+      }
       else setSyncStatus("Sheet sync issue: " + (response && response.error ? response.error : "event did not save to Sheet."));
     }).catch(() => {
       setSyncStatus("Sheet sync issue: event saved only on this device.");
@@ -799,8 +876,12 @@
 
   function syncBoard(board) {
     if (!config.backendUrl || !board) return;
+    rememberPendingBoard(board);
     backendRequest("upsertBoard", { board }).then((response) => {
-      if (response && response.ok) setSyncStatus("Sheet sync connected.");
+      if (response && response.ok) {
+        setSyncStatus("Sheet sync connected.");
+        requestBackendSnapshot({ reason: "board-save", silent: true });
+      }
       else setSyncStatus("Sheet sync issue: " + (response && response.error ? response.error : "board did not save to Sheet."));
     }).catch(() => {
       setSyncStatus("Sheet sync issue: board saved only on this device.");
@@ -809,6 +890,52 @@
 
   function setSyncStatus(message) {
     if (els.syncStatus) els.syncStatus.textContent = message;
+  }
+
+  function rememberPendingEvent(event) {
+    pendingEvents[event.event_id] = {
+      record: Object.assign({}, event),
+      until: Date.now() + 30000
+    };
+  }
+
+  function rememberPendingBoard(board) {
+    pendingBoards[board.board_slug] = {
+      record: Object.assign({}, board),
+      until: Date.now() + 30000
+    };
+  }
+
+  function mergePendingEvents(events) {
+    prunePending();
+    let merged = events.slice();
+    Object.keys(pendingEvents).forEach((id) => {
+      const pending = pendingEvents[id].record;
+      merged = merged.filter((event) => event.event_id !== id);
+      if (!pending.deleted) merged.push(pending);
+    });
+    return merged;
+  }
+
+  function mergePendingBoards(boards) {
+    prunePending();
+    let merged = boards.slice();
+    Object.keys(pendingBoards).forEach((slugValue) => {
+      const pending = pendingBoards[slugValue].record;
+      merged = merged.filter((board) => board.board_slug !== slugValue);
+      if (!pending.deleted) merged.push(pending);
+    });
+    return merged;
+  }
+
+  function prunePending() {
+    const now = Date.now();
+    Object.keys(pendingEvents).forEach((id) => {
+      if (pendingEvents[id].until < now) delete pendingEvents[id];
+    });
+    Object.keys(pendingBoards).forEach((slugValue) => {
+      if (pendingBoards[slugValue].until < now) delete pendingBoards[slugValue];
+    });
   }
 
   function backendRequest(action, payload) {

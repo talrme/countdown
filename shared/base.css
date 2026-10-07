@@ -120,6 +120,9 @@ button {
   transition: transform 160ms ease;
 }
 .add-button:hover { transform: rotate(-5deg) scale(1.04); }
+.hero-slot {
+  display: grid;
+}
 .hero-card,
 .expanded-countdown {
   position: relative;
@@ -236,10 +239,10 @@ button {
   text-transform: none;
 }
 .status-line {
-  min-height: 1.4em;
   color: var(--muted);
   font-weight: 850;
   font-size: clamp(1rem, 4vw, 1.35rem);
+  margin: 0;
 }
 .today-message,
 .past-message {
@@ -305,6 +308,11 @@ button {
   box-shadow: 0 8px 24px rgba(0,0,0,0.07);
   overflow: hidden;
 }
+.primary-card {
+  border-radius: calc(var(--radius) + 8px);
+  background: color-mix(in srgb, var(--paper) 88%, var(--accent-3) 12%);
+  box-shadow: var(--shadow);
+}
 .mini-summary {
   width: 100%;
   display: grid;
@@ -327,6 +335,24 @@ button {
   color: var(--muted);
   font-weight: 950;
 }
+.summary-tail {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  gap: 8px;
+  white-space: nowrap;
+}
+.summary-tail i {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--paper) 70%, var(--accent-3));
+  border: 1px solid var(--line);
+  font-style: normal;
+  font-size: 0.84rem;
+}
 .mini-details {
   display: none;
   padding: 0 12px 12px;
@@ -340,6 +366,19 @@ button {
 .expanded-countdown {
   min-height: 0;
   padding: clamp(13px, 3vw, 22px);
+}
+.detail-date {
+  position: relative;
+  z-index: 1;
+  justify-self: start;
+  width: fit-content;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--paper) 72%, var(--accent-2));
+  color: var(--muted);
+  padding: 8px 12px;
+  font-weight: 950;
+  font-size: 0.86rem;
 }
 .expanded-countdown .event-icon {
   width: 44px;
@@ -363,13 +402,63 @@ button {
   font-size: clamp(2.6rem, 13vw, 5.75rem);
 }
 .expanded-countdown .big-number[data-fit="ultra"] {
-  font-size: clamp(2.05rem, 10vw, 4.7rem);
+  font-size: clamp(1.85rem, 8.6vw, 3.45rem);
 }
 .expanded-countdown .big-number[data-fit="mega"] {
-  font-size: clamp(1.65rem, 8vw, 3.9rem);
+  font-size: clamp(1.45rem, 7vw, 3rem);
 }
 .expanded-countdown .status-line {
   font-size: 0.98rem;
+}
+.mixed-countdown {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+  padding: 8px 0 4px;
+}
+.mixed-countdown.is-changing {
+  animation: numberPop 340ms cubic-bezier(.2,1.5,.36,1);
+}
+.mixed-part {
+  display: grid;
+  gap: 2px;
+  align-content: end;
+  min-width: 0;
+}
+.mixed-part strong {
+  display: block;
+  color: var(--ink);
+  font-weight: 1000;
+  line-height: 0.78;
+  letter-spacing: 0;
+  text-shadow: 0.04em 0.04em 0 color-mix(in srgb, var(--accent-2) 70%, transparent);
+  font-size: clamp(4.6rem, 25vw, 10rem);
+}
+.mixed-part em {
+  color: var(--muted);
+  font-style: normal;
+  font-size: clamp(0.9rem, 3.5vw, 1.45rem);
+  font-weight: 950;
+  line-height: 1;
+}
+.mixed-part[data-rank="1"] strong { font-size: clamp(3.1rem, 16vw, 6.2rem); }
+.mixed-part[data-rank="2"] strong { font-size: clamp(2.35rem, 11vw, 4.5rem); }
+.mixed-part[data-rank="3"] strong,
+.mixed-part[data-rank="4"] strong,
+.mixed-part[data-rank="5"] strong { font-size: clamp(1.6rem, 8vw, 3.2rem); }
+.mixed-part[data-rank="2"] em,
+.mixed-part[data-rank="3"] em,
+.mixed-part[data-rank="4"] em,
+.mixed-part[data-rank="5"] em { font-size: clamp(0.7rem, 2.5vw, 0.95rem); }
+.mixed-plus {
+  align-self: center;
+  color: var(--accent);
+  font-size: clamp(1.3rem, 6vw, 2.2rem);
+  font-weight: 1000;
+  transform: translateY(-0.15em);
 }
 .mini-actions {
   display: grid;
@@ -522,6 +611,12 @@ summary {
   background: var(--accent);
   color: white;
 }
+.modal-actions button.primary,
+.primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--ink));
+}
 .danger, .subtle-danger {
   color: #a52332;
 }
@@ -621,6 +716,9 @@ summary {
     min-height: min(520px, calc(100svh - 170px));
     padding: 14px;
   }
+  .primary-card .mini-summary {
+    padding: 10px;
+  }
   .expanded-countdown {
     min-height: 0;
     padding: 12px;
@@ -644,6 +742,12 @@ summary {
   .expanded-countdown .unit-row button {
     font-size: 0.7rem;
     min-height: 34px;
+  }
+  .mixed-countdown {
+    gap: 6px;
+  }
+  .mixed-plus {
+    font-size: 1.35rem;
   }
   .mini-actions {
     grid-template-columns: repeat(4, minmax(0, 1fr));

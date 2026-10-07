@@ -7,10 +7,6 @@
   --accent-3: #ffb86b;
 }
 
-body.wave-watch .tiny-label::after {
-  content: " · Wave Watch";
-}
-
 body {
   background-image:
     radial-gradient(circle at 50% -10%, rgba(66, 226, 184, 0.35), transparent 35vw),

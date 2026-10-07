@@ -17,7 +17,6 @@
   <main class="app-shell">
     <header class="topbar">
       <button type="button" class="title-button" data-go-today aria-label="Refresh countdown view">
-        <span class="tiny-label">Countdown</span>
         <strong data-board-title>Countdown</strong>
       </button>
       <button type="button" class="add-button" data-open-event="new" aria-label="Add countdown">
@@ -25,12 +24,11 @@
       </button>
     </header>
 
-    <section class="hero-card countdown-card" data-hero-card aria-live="polite"></section>
+    <section class="hero-slot" data-hero-card aria-live="polite"></section>
 
     <section class="event-section">
       <div class="section-title-row">
         <h2>Other countdowns</h2>
-        <button type="button" data-open-event="new">Add one</button>
       </div>
       <div class="event-list" data-event-list></div>
     </section>
