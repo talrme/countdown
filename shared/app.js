@@ -83,9 +83,11 @@
     const requestedBoard = urlBoard || state.settings.board || config.defaultBoard || (state.boards[0] && state.boards[0].board_slug) || "bari";
     state.settings.board = boardExists(requestedBoard) ? requestedBoard : (state.boards[0] && state.boards[0].board_slug) || "bari";
     if (!state.settings.cardUiV2) {
-      const first = sortedEvents()[0];
-      if (!state.openEventIds.length && first) state.openEventIds = [first.event_id];
       state.settings.cardUiV2 = true;
+    }
+    if (!state.settings.equalStackV1) {
+      state.openEventIds = [];
+      state.settings.equalStackV1 = true;
     }
     saveState();
     syncUrl();
@@ -251,8 +253,9 @@
       syncUrl();
     }
     renderBoardSelect();
-    renderHeroOnly(forceCelebration);
+    renderHeroOnly();
     renderList();
+    if (forceCelebration) celebrate(8);
     renderThemeButtons();
     renderDragToggle();
     renderAnimationButtons();
@@ -281,9 +284,16 @@
 
   function renderList() {
     const events = sortedEvents();
-    const rest = events.slice(1);
     if (!els.list) return;
-    const cards = rest.map((event) => renderEventCard(event, { primary: false }));
+    const cards = events.map((event) => {
+      const unit = activeUnitFor(event);
+      const display = displayFor(event, unit);
+      if (display.kind === "today" && !state.celebratedToday[event.event_id]) {
+        state.celebratedToday[event.event_id] = true;
+        celebrate(20);
+      }
+      return renderEventCard(event, { primary: false, unit, display });
+    });
     cards.push('<article class="mini-card add-card"><button type="button" class="mini-summary add-summary" data-open-event="new"><span class="event-icon">+</span><strong>Add another countdown</strong><span>go</span></button></article>');
     els.list.innerHTML = cards.join("");
   }

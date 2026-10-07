@@ -67,8 +67,8 @@ button {
   margin: 0 auto;
   min-height: 100vh;
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  gap: 12px;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
   padding: 10px 0 24px;
 }
 .topbar {
@@ -289,24 +289,7 @@ body[data-theme="night"] .title-button strong {
 }
 .event-section {
   display: grid;
-  gap: 10px;
-}
-.section-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.section-title-row h2 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-.section-title-row button {
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--paper);
-  padding: 8px 12px;
-  font-weight: 900;
+  min-width: 0;
 }
 .event-list {
   display: grid;
