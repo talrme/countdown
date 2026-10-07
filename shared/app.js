@@ -461,8 +461,8 @@
     }
 
     if (unit === "months") {
-      const value = Math.max(0, months.months);
-      return { kind: "future", big: String(value), unit: plural(value, "month"), note: "", short: value + "mo" };
+      const value = monthDisplayValue(now, months);
+      return { kind: "future", big: value, unit: monthUnitLabel(value), note: "", short: value + "mo" };
     }
 
     if (unit === "weeks") {
@@ -548,6 +548,21 @@
     }
     const days = Math.max(0, Math.ceil((startOfDay(end) - startOfDay(anchor)) / 86400000));
     return { months, days };
+  }
+
+  function monthDisplayValue(start, parts) {
+    const wholeMonths = Math.max(0, parts.months);
+    if (!parts.days) return String(wholeMonths);
+    const anchor = addMonths(start, wholeMonths);
+    const nextAnchor = addMonths(anchor, 1);
+    const daysInPartialMonth = Math.max(1, Math.round((startOfDay(nextAnchor) - startOfDay(anchor)) / 86400000));
+    const value = wholeMonths + Math.max(0, parts.days) / daysInPartialMonth;
+    const rounded = value.toFixed(1);
+    return rounded === "0.0" ? "0" : rounded;
+  }
+
+  function monthUnitLabel(value) {
+    return String(value).includes(".") ? "months" : plural(Number(value), "month");
   }
 
   function addYears(date, years) {

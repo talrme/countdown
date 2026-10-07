@@ -18,6 +18,8 @@ Expanded secondary countdowns should reuse the same big-card pattern as the prim
 
 Clicking unit buttons is intentionally device-local. It updates \`activeUnits\` in \`localStorage\` and should not mutate \`default_unit\` or sync an event write to the Sheet. Editing the countdown form is still the way to set a shared default unit.
 
+Month displays use calendar-aware fractional months when there are leftover days, rounded to one decimal. If that would show \`0.0\`, display \`0\` instead.
+
 Drag ordering is an optional device-local setting. It is off by default; when enabled, tile grab handles appear and reorder through the same Sheet-backed sort_order field as the Up/Down buttons.
 
 Animation level is also device-local. It runs 1-5 with default 3: 1 is minimal/no animations, 5 is intentionally extra playful.
