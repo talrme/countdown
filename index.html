@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Countdown</title>
+  <meta name="description" content="A playful countdown board for birthdays, trips, camp, and big days.">
+  <meta name="theme-color" content="#eaf8ff">
+  <meta name="apple-mobile-web-app-title" content="Countdown">
+  <link rel="icon" href="assets/countdown-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/countdown-icon.svg">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="shared/base.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="wave-watch" data-variant-name="Wave Watch">
+  <main class="app-shell">
+    <header class="topbar">
+      <button type="button" class="title-button" data-go-today aria-label="Refresh countdown view">
+        <span class="tiny-label">Countdown</span>
+        <strong data-board-title>Countdown</strong>
+      </button>
+      <button type="button" class="add-button" data-open-event="new" aria-label="Add countdown">
+        <span aria-hidden="true">+</span>
+      </button>
+    </header>
+
+    <section class="hero-card" data-hero-card aria-live="polite"></section>
+
+    <section class="event-section">
+      <div class="section-title-row">
+        <h2>Other countdowns</h2>
+        <button type="button" data-open-event="new">Add one</button>
+      </div>
+      <div class="event-list" data-event-list></div>
+    </section>
+
+    <footer class="bottom-tools">
+      <button type="button" data-open-share aria-label="Share or save">
+        <span aria-hidden="true">↗</span>
+        <span>Share / Save</span>
+      </button>
+      <button type="button" data-open-settings aria-label="Open settings">
+        <span aria-hidden="true">⚙</span>
+        <span>Settings</span>
+      </button>
+    </footer>
+  </main>
+
+  <div class="modal-backdrop" data-modal-backdrop hidden></div>
+
+  <section class="modal-panel event-modal" data-event-modal hidden role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
+    <form class="modal-card" data-event-form>
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">Big day</p>
+          <h2 id="event-modal-title" data-event-modal-title>Add countdown</h2>
+        </div>
+        <button type="button" class="x-button" data-close-modal aria-label="Close">×</button>
+      </header>
+      <input type="hidden" name="event_id">
+      <label>
+        <span>Title</span>
+        <input name="title" required placeholder="Camp starts">
+      </label>
+      <label>
+        <span>Date</span>
+        <input name="target_date" type="date" required>
+      </label>
+      <details class="advanced-time">
+        <summary>Optional time and extras</summary>
+        <label>
+          <span>Time</span>
+          <input name="target_time" type="time">
+        </label>
+        <label>
+          <span>Icon</span>
+          <input name="icon" maxlength="4" placeholder="🎂">
+        </label>
+        <label>
+          <span>Default unit</span>
+          <select name="default_unit">
+            <option value="days">Days</option>
+            <option value="months">Months</option>
+            <option value="weeks">Weeks</option>
+            <option value="hours">Hours</option>
+            <option value="minutes">Minutes</option>
+            <option value="seconds">Seconds</option>
+            <option value="mixed">Mixed</option>
+          </select>
+        </label>
+      </details>
+      <div class="modal-actions">
+        <button type="button" class="danger" data-delete-event hidden>Delete</button>
+        <button type="submit" class="primary">Save</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="modal-panel settings-modal" data-settings-modal hidden role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="modal-card">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">This phone</p>
+          <h2 id="settings-title">Settings</h2>
+        </div>
+        <button type="button" class="x-button" data-close-modal aria-label="Close">×</button>
+      </header>
+      <section class="settings-block">
+        <h3>Whose countdowns?</h3>
+        <label>
+          <span>Current board</span>
+          <select data-board-select></select>
+        </label>
+        <div class="inline-form">
+          <input data-new-board-name placeholder="Add a board name">
+          <button type="button" data-add-board>Add</button>
+        </div>
+        <button type="button" class="subtle-danger" data-delete-board>Delete current board</button>
+      </section>
+      <section class="settings-block">
+        <h3>Color mood</h3>
+        <div class="theme-grid" data-theme-grid>
+          <button type="button" data-theme-choice="pop"><span></span>Pop</button>
+          <button type="button" data-theme-choice="night"><span></span>Night</button>
+          <button type="button" data-theme-choice="soft"><span></span>Soft</button>
+          <button type="button" data-theme-choice="high"><span></span>Bold</button>
+        </div>
+      </section>
+      <details class="advanced-settings">
+        <summary>Advanced</summary>
+        <p class="small-copy">Backend is ready for Apps Script. Until a URL is added in <code>shared/config.js</code>, edits save on this browser.</p>
+        <a href="https://docs.google.com/spreadsheets/d/1YxKfctOYI8LLK102KVybU5wy46yqMEGu6vixg3Ay_oU/edit?usp=sharing" target="_blank" rel="noopener">Open backend Sheet</a>
+      </details>
+      <div class="modal-actions">
+        <button type="button" data-reset-device>Reset this device</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="modal-panel share-modal" data-share-modal hidden role="dialog" aria-modal="true" aria-labelledby="share-title">
+    <div class="modal-card">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">Send it</p>
+          <h2 id="share-title">Share / Save</h2>
+        </div>
+        <button type="button" class="x-button" data-close-modal aria-label="Close">×</button>
+      </header>
+      <label>
+        <span>Board link</span>
+        <input data-share-url readonly>
+      </label>
+      <button type="button" class="primary" data-copy-link>Copy link</button>
+      <p class="copy-status" data-copy-status aria-live="polite"></p>
+      <div class="install-grid">
+        <section>
+          <strong>iPhone / iPad</strong>
+          <p>Open in Safari, tap Share, then Add to Home Screen.</p>
+        </section>
+        <section>
+          <strong>Android</strong>
+          <p>Open in Chrome, tap the menu, then Add to Home screen or Install app.</p>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <div class="celebration-layer" data-celebration aria-hidden="true"></div>
+
+  <script src="shared/config.js"></script>
+  <script src="shared/data.js"></script>
+  <script src="shared/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+:root {
+  --bg: #eaf8ff;
+  --paper: color-mix(in srgb, #eaf8ff 18%, white);
+  --ink: #0a2d4d;
+  --accent: #177ddc;
+  --accent-2: #42e2b8;
+  --accent-3: #ffb86b;
+}
+
+body.wave-watch .tiny-label::after {
+  content: " · Wave Watch";
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 50% -10%, rgba(66, 226, 184, 0.35), transparent 35vw),
+    linear-gradient(180deg, #eaf8ff, #f9fdff);
+}
+
+.hero-card::after {
+  width: 280px;
+  height: 70px;
+  border-radius: 50%;
+  bottom: -20px;
+  left: 12%;
+}
+
+.mini-card {
+  border-radius: 28px 10px 28px 10px;
+}
