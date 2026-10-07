@@ -26,7 +26,14 @@ Tabs:
 - `Events`: countdown items
 - `Settings`: global backend settings
 
-The site works immediately with bundled seed data and local browser edits. Once Apps Script is deployed, paste the web app URL into `shared/config.js` as `backendUrl`.
+The site works immediately with bundled seed data and local browser edits. The current Apps Script URL is saved in `shared/config.js` as `backendUrl`.
+
+For cross-device syncing to work, the Apps Script deployment must be a Web App with:
+
+- Execute as: **Me**
+- Who has access: **Anyone**
+
+The Sheet itself can stay private. The web app runs as the owner and writes to the Sheet.
 
 ## URL Boards
 
@@ -49,4 +56,4 @@ https://talrme.github.io/countdown/?board=tal
 6. Copy the Web App URL.
 7. Paste it into `shared/config.js` as `backendUrl`.
 
-The Sheet itself can stay private after setup. The web app runs as the owner and writes to the Sheet.
+If the site stops syncing, test the Apps Script `/exec` URL directly. It should return JSON or JSONP, not a Google “You need access” page.
