@@ -57,4 +57,6 @@ https://talrme.github.io/countdown/?board=tal
 6. Copy the Web App URL.
 7. Paste it into `shared/config.js` as `backendUrl`.
 
+`setup/Code.gs` opens the backend Sheet by ID and creates the expected `Boards`, `Events`, and `Settings` tabs if they do not exist yet. This is intentionally similar to the workout site backend pattern.
+
 If the site stops syncing, test the Apps Script `/exec` URL directly. It should return JSON or JSONP, not a Google “You need access” page.

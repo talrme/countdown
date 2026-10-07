@@ -1,8 +1,28 @@
+const SPREADSHEET_ID = '1YxKfctOYI8LLK102KVybU5wy46yqMEGu6vixg3Ay_oU';
+
 const SHEETS = {
   BOARDS: 'Boards',
   EVENTS: 'Events',
   SETTINGS: 'Settings'
 };
+
+const HEADERS = {
+  Boards: ['board_slug', 'board_name', 'sort_order', 'created_at', 'updated_at', 'deleted'],
+  Events: ['event_id', 'board_slug', 'title', 'target_date', 'target_time', 'timezone', 'default_unit', 'icon', 'theme', 'sort_order', 'created_at', 'updated_at', 'deleted'],
+  Settings: ['key', 'value', 'notes']
+};
+
+const DEFAULT_BOARDS = [
+  ['bari', "Bari's Countdowns", 1, '', '', false],
+  ['tal', "Tal's Countdowns", 2, '', '', false],
+  ['miri', "Miri's Countdowns", 3, '', '', false]
+];
+
+const DEFAULT_EVENTS = [
+  ['evt_bari_birthday', 'bari', "Bari's birthday", '2027-02-14', '', 'America/Los_Angeles', 'days', '🎂', 'birthday', 1, '', '', false],
+  ['evt_dad_birthday', 'bari', "Dad's birthday", '2027-05-02', '', 'America/Los_Angeles', 'months', '🎈', 'birthday', 2, '', '', false],
+  ['evt_camp', 'bari', 'Camp starts', '2027-06-21', '09:00', 'America/Los_Angeles', 'days', '🏕️', 'camp', 3, '', '', false]
+];
 
 function doGet(e) {
   const params = e.parameter || {};
@@ -50,16 +70,18 @@ function output(data, callback) {
 }
 
 function snapshot() {
+  setupSheets_();
   return {
     ok: true,
     boards: readObjects(SHEETS.BOARDS),
     events: readObjects(SHEETS.EVENTS),
     settings: readObjects(SHEETS.SETTINGS),
-    spreadsheetUrl: SpreadsheetApp.getActiveSpreadsheet().getUrl()
+    spreadsheetUrl: spreadsheet_().getUrl()
   };
 }
 
 function upsertBoard(board) {
+  setupSheets_();
   const sheet = sheetByName(SHEETS.BOARDS);
   const headers = headersFor(sheet);
   const slug = clean(board.board_slug || board.slug || board.board_name);
@@ -74,6 +96,7 @@ function upsertBoard(board) {
 }
 
 function upsertEvent(event) {
+  setupSheets_();
   const sheet = sheetByName(SHEETS.EVENTS);
   const headers = headersFor(sheet);
   if (!event.event_id) event.event_id = 'evt_' + Date.now();
@@ -124,9 +147,48 @@ function headersFor(sheet) {
 }
 
 function sheetByName(name) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
+  const sheet = spreadsheet_().getSheetByName(name);
   if (!sheet) throw new Error('Missing sheet: ' + name);
   return sheet;
+}
+
+function spreadsheet_() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
+}
+
+function setupSheets_() {
+  ensureSheet_(SHEETS.BOARDS, HEADERS.Boards, DEFAULT_BOARDS);
+  ensureSheet_(SHEETS.EVENTS, HEADERS.Events, DEFAULT_EVENTS);
+  ensureSheet_(SHEETS.SETTINGS, HEADERS.Settings, [
+    ['schema_version', '1', 'Countdown backend schema version']
+  ]);
+}
+
+function ensureSheet_(name, headers, defaults) {
+  const ss = spreadsheet_();
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) sheet = ss.insertSheet(name);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(headers);
+  }
+  const currentHeaders = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), headers.length)).getValues()[0].map(String);
+  const missing = headers.filter(function(header) {
+    return currentHeaders.indexOf(header) < 0;
+  });
+  if (missing.length) {
+    throw new Error('Sheet ' + name + ' is missing headers: ' + missing.join(', '));
+  }
+  if (sheet.getLastRow() === 1 && defaults && defaults.length) {
+    const now = new Date().toISOString();
+    const rows = defaults.map(function(row) {
+      return row.map(function(value, index) {
+        const header = headers[index];
+        if ((header === 'created_at' || header === 'updated_at') && !value) return now;
+        return value;
+      });
+    });
+    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+  }
 }
 
 function nextSort(sheet) {
