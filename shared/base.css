@@ -495,6 +495,13 @@ summary {
   font-weight: 800;
   line-height: 1.4;
 }
+.small-copy[data-sync-status] {
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--paper) 70%, var(--accent-3));
+  padding: 10px 12px;
+}
 .install-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

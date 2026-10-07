@@ -45,6 +45,7 @@
     els.newBoardName = document.querySelector("[data-new-board-name]");
     els.shareUrl = document.querySelector("[data-share-url]");
     els.copyStatus = document.querySelector("[data-copy-status]");
+    els.syncStatus = document.querySelector("[data-sync-status]");
     els.celebration = document.querySelector("[data-celebration]");
   }
 
@@ -557,24 +558,48 @@
   }
 
   function requestBackendSnapshot() {
-    if (!config.backendUrl) return;
+    if (!config.backendUrl) {
+      setSyncStatus("Local only. No Apps Script URL is configured.");
+      return;
+    }
+    setSyncStatus("Checking Sheet sync...");
     backendRequest("snapshot", {}).then((response) => {
-      if (!response || !response.ok) return;
+      if (!response || !response.ok) {
+        setSyncStatus("Sheet sync issue: " + (response && response.error ? response.error : "backend did not return ok."));
+        return;
+      }
       if (response.boards) state.boards = normalizeBoards(response.boards);
       if (response.events) state.events = normalizeEvents(response.events);
       saveState();
       render();
-    }).catch(() => {});
+      setSyncStatus("Sheet sync connected.");
+    }).catch(() => {
+      setSyncStatus("Sheet sync issue: Apps Script is not reachable. Check Web App access.");
+    });
   }
 
   function syncEvent(event) {
     if (!config.backendUrl || !event) return;
-    backendRequest("upsertEvent", { event }).catch(() => {});
+    backendRequest("upsertEvent", { event }).then((response) => {
+      if (response && response.ok) setSyncStatus("Sheet sync connected.");
+      else setSyncStatus("Sheet sync issue: " + (response && response.error ? response.error : "event did not save to Sheet."));
+    }).catch(() => {
+      setSyncStatus("Sheet sync issue: event saved only on this device.");
+    });
   }
 
   function syncBoard(board) {
     if (!config.backendUrl || !board) return;
-    backendRequest("upsertBoard", { board }).catch(() => {});
+    backendRequest("upsertBoard", { board }).then((response) => {
+      if (response && response.ok) setSyncStatus("Sheet sync connected.");
+      else setSyncStatus("Sheet sync issue: " + (response && response.error ? response.error : "board did not save to Sheet."));
+    }).catch(() => {
+      setSyncStatus("Sheet sync issue: board saved only on this device.");
+    });
+  }
+
+  function setSyncStatus(message) {
+    if (els.syncStatus) els.syncStatus.textContent = message;
   }
 
   function backendRequest(action, payload) {

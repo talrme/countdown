@@ -14,6 +14,7 @@ A kid-friendly countdown board for birthdays, trips, camp starts, and other big 
 - Includes settings for board selection, new boards, deleting boards, and color mood
 - Includes a Share / Save modal with copy-link and home-screen instructions
 - Saves edits in this browser immediately, even before a backend is connected
+- Shows backend sync status in Settings -> Advanced
 
 ## Backend Sheet
 
