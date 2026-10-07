@@ -15,6 +15,8 @@ This is primarily kid-facing. Keep the UI playful, tactile, animated, and very r
 
 Expanded secondary countdowns should reuse the same big-card pattern as the primary countdown. The default unit can be \`auto\`, which lets the app choose years/months/weeks/days/hours/minutes/seconds based on distance from the event.
 
+Drag ordering is an optional device-local setting. It is off by default; when enabled, tile grab handles appear and reorder through the same Sheet-backed sort_order field as the Up/Down buttons.
+
 ## Data Contract
 
 Boards:

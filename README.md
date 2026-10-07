@@ -13,6 +13,7 @@ A kid-friendly countdown board for birthdays, trips, camp starts, and other big 
 - Automatically resizes large values so seconds and minutes still fit on phones
 - Supports multiple boards through a URL parameter, such as `?board=bari`
 - Lets anyone with the page add, edit, delete, and reorder countdowns
+- Has an optional per-device drag-ordering setting with grab handles for rearranging tiles
 - Includes settings for board selection, new boards, deleting boards, and color mood
 - Includes a Share / Save modal with copy-link and home-screen instructions that preserve the current board link
 - Saves edits in this browser immediately, even before a backend is connected

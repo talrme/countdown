@@ -15,14 +15,16 @@
   const state = {
     boards: [],
     events: [],
-    settings: { board: "", theme: "pop" },
+    settings: { board: "", theme: "pop", allowDragOrder: false },
     openEventIds: [],
     activeUnits: {},
     editingId: "",
     confirmDeleteId: "",
     lastBigText: {},
     celebratedToday: {},
-    recentSyncUntil: 0
+    recentSyncUntil: 0,
+    drag: null,
+    suppressNextClick: false
   };
 
   const els = {};
@@ -61,6 +63,7 @@
     els.shareUrl = document.querySelector("[data-share-url]");
     els.copyStatus = document.querySelector("[data-copy-status]");
     els.syncStatus = document.querySelector("[data-sync-status]");
+    els.dragToggle = document.querySelector("[data-drag-toggle]");
     els.celebration = document.querySelector("[data-celebration]");
   }
 
@@ -135,6 +138,12 @@
     document.addEventListener("click", (event) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
+      if (state.suppressNextClick) {
+        state.suppressNextClick = false;
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
 
       if (target.closest("[data-go-today]")) render(true);
       const openEvent = target.closest("[data-open-event]");
@@ -169,6 +178,14 @@
       if (target.closest("[data-copy-link]")) copyLink();
     });
 
+    document.addEventListener("pointerdown", onDragPointerDown);
+    document.addEventListener("pointermove", onDragPointerMove);
+    document.addEventListener("pointerup", onDragPointerUp);
+    document.addEventListener("pointercancel", onDragPointerCancel);
+    document.addEventListener("mousedown", onDragPointerDown);
+    document.addEventListener("mousemove", onDragPointerMove);
+    document.addEventListener("mouseup", onDragPointerUp);
+
     if (els.eventForm) {
       els.eventForm.addEventListener("submit", (event) => {
         event.preventDefault();
@@ -192,9 +209,19 @@
         render();
       });
     }
+    if (els.dragToggle) {
+      els.dragToggle.addEventListener("change", () => {
+        state.settings.allowDragOrder = Boolean(els.dragToggle.checked);
+        saveState();
+        renderDragToggle();
+      });
+    }
 
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") closeModals();
+      if (event.key === "Escape") {
+        cancelDrag();
+        closeModals();
+      }
     });
 
     window.addEventListener("focus", () => {
@@ -222,6 +249,7 @@
     renderHeroOnly(forceCelebration);
     renderList();
     renderThemeButtons();
+    renderDragToggle();
     updateInstallManifest();
   }
 
@@ -261,9 +289,10 @@
     const open = state.openEventIds.includes(event.event_id);
     const id = escapeAttr(event.event_id);
     const classes = "mini-card event-card" + (opts.primary ? " primary-card" : "") + (open ? " is-open" : "");
-    return '<article class="' + classes + '">' +
+    return '<article class="' + classes + '" data-event-card="' + id + '">' +
       '<button type="button" class="mini-summary" data-toggle-card="' + id + '" aria-expanded="' + String(open) + '">' +
         '<span class="event-icon">' + escapeHtml(event.icon || "⭐") + '</span>' +
+        '<span class="drag-grip" data-drag-grip aria-label="Drag to reorder" role="button">⋮⋮</span>' +
         '<strong>' + escapeHtml(event.title) + '</strong>' +
         '<span class="summary-tail">' + escapeHtml(display.short) + '<i aria-hidden="true">' + (open ? "⌃" : "⌄") + '</i></span>' +
       '</button>' +
@@ -307,10 +336,14 @@
   function eventToolbar(event) {
     const id = escapeAttr(event.event_id);
     const title = escapeAttr(event.title);
+    const events = sortedEvents();
+    const index = events.findIndex((item) => item.event_id === event.event_id);
+    const upDisabled = index <= 0 ? " disabled" : "";
+    const downDisabled = index < 0 || index >= events.length - 1 ? " disabled" : "";
     return '<div class="mini-actions" aria-label="Countdown actions">' +
       '<button type="button" class="icon-action" data-edit-event="' + id + '" aria-label="Edit ' + title + '"><span aria-hidden="true">✎</span><small>Edit</small></button>' +
-      '<button type="button" class="icon-action" data-move-event="' + id + '" data-dir="-1" aria-label="Move up"><span aria-hidden="true">↑</span><small>Up</small></button>' +
-      '<button type="button" class="icon-action" data-move-event="' + id + '" data-dir="1" aria-label="Move down"><span aria-hidden="true">↓</span><small>Down</small></button>' +
+      '<button type="button" class="icon-action" data-move-event="' + id + '" data-dir="-1" aria-label="Move up"' + upDisabled + '><span aria-hidden="true">↑</span><small>Up</small></button>' +
+      '<button type="button" class="icon-action" data-move-event="' + id + '" data-dir="1" aria-label="Move down"' + downDisabled + '><span aria-hidden="true">↓</span><small>Down</small></button>' +
       '<button type="button" class="icon-action danger-action" data-open-delete="' + id + '" aria-label="Delete ' + title + '"><span aria-hidden="true">×</span><small>Delete</small></button>' +
     '</div>';
   }
@@ -328,6 +361,11 @@
     document.querySelectorAll("[data-theme-choice]").forEach((button) => {
       button.classList.toggle("is-active", button.getAttribute("data-theme-choice") === state.settings.theme);
     });
+  }
+
+  function renderDragToggle() {
+    if (els.dragToggle) els.dragToggle.checked = Boolean(state.settings.allowDragOrder);
+    document.body.classList.toggle("drag-order-enabled", Boolean(state.settings.allowDragOrder));
   }
 
   function sortedEvents() {
@@ -649,6 +687,194 @@
     syncEvent(b);
     startSyncWindow(syncWindowMs);
     render();
+  }
+
+  function onDragPointerDown(event) {
+    if (state.drag) return;
+    if (!state.settings.allowDragOrder) return;
+    if (event.button !== undefined && event.button !== 0) return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const summary = target.closest(".mini-summary");
+    if (!summary || summary.closest(".add-card")) return;
+    const card = summary.closest("[data-event-card]");
+    if (!card) return;
+    const immediate = Boolean(target.closest("[data-drag-grip]"));
+    state.drag = {
+      id: card.getAttribute("data-event-card"),
+      card,
+      startX: event.clientX,
+      startY: event.clientY,
+      lastX: event.clientX,
+      lastY: event.clientY,
+      startTime: Date.now(),
+      started: false,
+      timer: window.setTimeout(() => startDrag(), 380)
+    };
+    document.body.classList.add("is-pressing-order");
+    if (immediate) {
+      event.preventDefault();
+      startDrag();
+    }
+  }
+
+  function onDragPointerMove(event) {
+    const drag = state.drag;
+    if (!drag) return;
+    drag.lastX = event.clientX;
+    drag.lastY = event.clientY;
+    if (!drag.started) {
+      const moved = Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY);
+      if (Date.now() - drag.startTime > 360) {
+        startDrag();
+        if (state.drag && state.drag.started) {
+          event.preventDefault();
+          moveDragGhost(event.clientX, event.clientY);
+          positionDragPlaceholder(event.clientY);
+        }
+        return;
+      }
+      if (moved > 12) cancelDrag();
+      return;
+    }
+    event.preventDefault();
+    moveDragGhost(event.clientX, event.clientY);
+    positionDragPlaceholder(event.clientY);
+  }
+
+  function onDragPointerUp(event) {
+    const drag = state.drag;
+    if (!drag) return;
+    drag.lastX = event.clientX;
+    drag.lastY = event.clientY;
+    if (!drag.started) {
+      cancelDrag();
+      return;
+    }
+    event.preventDefault();
+    finishDragOrder();
+  }
+
+  function onDragPointerCancel() {
+    const drag = state.drag;
+    if (drag && drag.started) finishDragOrder();
+    else cancelDrag();
+  }
+
+  function startDrag() {
+    const drag = state.drag;
+    if (!drag || drag.started) return;
+    const rect = drag.card.getBoundingClientRect();
+    const clone = drag.card.cloneNode(true);
+    const placeholder = document.createElement("article");
+    placeholder.className = "mini-card drag-placeholder";
+    placeholder.style.height = rect.height + "px";
+    placeholder.setAttribute("data-drag-placeholder", drag.id);
+
+    clone.classList.add("drag-ghost");
+    clone.removeAttribute("data-event-card");
+    clone.style.width = rect.width + "px";
+    clone.style.height = rect.height + "px";
+    clone.style.left = rect.left + "px";
+    clone.style.top = rect.top + "px";
+
+    drag.offsetX = drag.startX - rect.left;
+    drag.offsetY = drag.startY - rect.top;
+    drag.clone = clone;
+    drag.placeholder = placeholder;
+    drag.started = true;
+    state.suppressNextClick = true;
+
+    drag.card.parentNode.insertBefore(placeholder, drag.card);
+    drag.card.classList.add("drag-source");
+    drag.card.style.display = "none";
+    document.body.appendChild(clone);
+    document.body.classList.remove("is-pressing-order");
+    document.body.classList.add("is-dragging-order");
+    moveDragGhost(drag.lastX, drag.lastY);
+    positionDragPlaceholder(drag.lastY);
+  }
+
+  function moveDragGhost(x, y) {
+    const drag = state.drag;
+    if (!drag || !drag.clone) return;
+    drag.clone.style.transform = "translate3d(" + (x - drag.offsetX - drag.clone.offsetLeft) + "px, " + (y - drag.offsetY - drag.clone.offsetTop) + "px, 0) rotate(-1.5deg)";
+  }
+
+  function positionDragPlaceholder(y) {
+    const drag = state.drag;
+    if (!drag || !drag.placeholder) return;
+    const cards = Array.from(document.querySelectorAll("[data-event-card]"))
+      .filter((card) => card !== drag.card && !card.classList.contains("add-card") && !card.classList.contains("drag-ghost"));
+    const before = cards.find((card) => {
+      const rect = card.getBoundingClientRect();
+      return y < rect.top + rect.height / 2;
+    });
+    if (before && before.parentNode) {
+      before.parentNode.insertBefore(drag.placeholder, before);
+      drag.previewIds = collectDragOrderIds(drag);
+      return;
+    }
+    const addCard = document.querySelector(".add-card");
+    if (addCard && addCard.parentNode) addCard.parentNode.insertBefore(drag.placeholder, addCard);
+    else if (els.list) els.list.appendChild(drag.placeholder);
+    drag.previewIds = collectDragOrderIds(drag);
+  }
+
+  function finishDragOrder() {
+    const drag = state.drag;
+    if (!drag) return;
+    const current = sortedEvents();
+    const known = current.map((event) => event.event_id);
+    const ids = (drag.previewIds && drag.previewIds.length ? drag.previewIds : collectDragOrderIds(drag))
+      .filter((id, index, list) => id && known.includes(id) && list.indexOf(id) === index);
+    known.forEach((id) => {
+      if (!ids.includes(id)) ids.push(id);
+    });
+    const byId = Object.fromEntries(current.map((event) => [event.event_id, event]));
+    const changed = [];
+    ids.forEach((id, index) => {
+      const event = byId[id];
+      if (event && event.sort_order !== index + 1) {
+        event.sort_order = index + 1;
+        event.updated_at = new Date().toISOString();
+        changed.push(event);
+      }
+    });
+    cleanupDrag();
+    if (changed.length) {
+      saveState();
+      changed.forEach(syncEvent);
+      startSyncWindow(syncWindowMs);
+    }
+    render();
+  }
+
+  function collectDragOrderIds(drag) {
+    return Array.from(document.querySelectorAll("[data-drag-placeholder], [data-event-card]:not(.drag-source):not(.drag-ghost)"))
+      .map((node) => node.getAttribute("data-drag-placeholder") || node.getAttribute("data-event-card") || "")
+      .filter(Boolean);
+  }
+
+  function cancelDrag() {
+    const drag = state.drag;
+    if (!drag) return;
+    cleanupDrag();
+  }
+
+  function cleanupDrag() {
+    const drag = state.drag;
+    if (!drag) return;
+    if (drag.timer) window.clearTimeout(drag.timer);
+    if (drag.clone) drag.clone.remove();
+    if (drag.placeholder) drag.placeholder.remove();
+    if (drag.card) {
+      drag.card.classList.remove("drag-source");
+      drag.card.style.display = "";
+    }
+    document.body.classList.remove("is-dragging-order");
+    document.body.classList.remove("is-pressing-order");
+    state.drag = null;
   }
 
   function addBoard() {
