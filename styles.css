@@ -13,6 +13,25 @@ body {
     linear-gradient(180deg, #eaf8ff, #f9fdff);
 }
 
+body[data-theme="night"] {
+  background-image:
+    radial-gradient(circle at 50% -10%, rgba(66, 226, 184, 0.16), transparent 35vw),
+    radial-gradient(circle at 12% 14%, rgba(23, 125, 220, 0.18), transparent 26vw),
+    linear-gradient(180deg, #101525, #131a2c 58%, #0d1220);
+}
+
+body[data-theme="soft"] {
+  background-image:
+    radial-gradient(circle at 50% -10%, rgba(79, 174, 144, 0.18), transparent 35vw),
+    linear-gradient(180deg, #f8f4ea, #fffdf6);
+}
+
+body[data-theme="high"] {
+  background-image:
+    repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.04) 10px, transparent 10px, transparent 20px),
+    linear-gradient(180deg, #fff, #fff);
+}
+
 .hero-card::after {
   width: 280px;
   height: 70px;

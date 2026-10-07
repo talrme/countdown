@@ -82,6 +82,11 @@ button {
   padding: 8px 0;
   backdrop-filter: blur(14px);
 }
+body[data-theme="night"] .topbar {
+  border-bottom: 1px solid var(--line);
+  border-radius: 0 0 18px 18px;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+}
 .title-button {
   min-width: 0;
   text-align: left;
@@ -105,6 +110,12 @@ button {
   white-space: nowrap;
   font-size: clamp(1.55rem, 8vw, 3.4rem);
   line-height: 0.94;
+  color: var(--ink);
+  text-shadow: 0 2px 0 color-mix(in srgb, var(--paper) 54%, transparent);
+}
+body[data-theme="night"] .title-button strong {
+  color: #f8fbff;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.58);
 }
 .add-button {
   width: 52px;
@@ -392,6 +403,21 @@ body.is-dragging-order .drag-grip {
 .expanded-countdown {
   min-height: 0;
   padding: clamp(13px, 3vw, 22px);
+}
+.expanded-countdown.unit-pop {
+  animation: cardPop 720ms cubic-bezier(.18, 1.45, .28, 1);
+}
+.unit-spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 4;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  pointer-events: none;
+  box-shadow: 0 0 12px currentColor;
+  animation: sparkFly 760ms cubic-bezier(.18, .95, .22, 1) forwards;
 }
 .detail-date {
   position: relative;
@@ -736,20 +762,49 @@ body.is-dragging-order .add-card {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
 }
-.theme-grid {
+.theme-grid,
+.animation-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 7px;
 }
-.theme-grid button {
+.animation-grid {
+  grid-template-columns: repeat(5, 1fr);
+}
+.theme-grid button,
+.animation-grid button {
   min-height: 58px;
   border: 2px solid var(--line);
   border-radius: 14px;
   background: var(--paper);
+  color: var(--ink);
   font-weight: 950;
 }
-.theme-grid button.is-active {
+.animation-grid button {
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  padding: 7px 4px;
+}
+.animation-grid strong {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, var(--paper));
+  border: 1px solid var(--line);
+}
+.animation-grid span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+.theme-grid button.is-active,
+.animation-grid button.is-active {
   outline: 4px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, var(--paper) 72%, var(--accent-2));
 }
 .theme-grid span {
   display: block;
@@ -809,6 +864,40 @@ body.is-dragging-order .add-card {
   70% { transform: scale(1.06) rotate(1deg); }
   100% { transform: scale(1) rotate(0deg); }
 }
+@keyframes cardPop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.018) rotate(-0.4deg); }
+  64% { transform: scale(0.993) rotate(0.25deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+@keyframes sparkFly {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+  16% { opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.12) rotate(180deg); opacity: 0; }
+}
+@keyframes gentleBreathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2px) scale(1.006); }
+}
+@keyframes happyWiggle {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  22% { transform: translateY(-2px) rotate(-0.45deg); }
+  55% { transform: translateY(1px) rotate(0.35deg); }
+  78% { transform: translateY(-1px) rotate(-0.18deg); }
+}
+@keyframes iconBob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(3deg); }
+}
+@keyframes titleShimmy {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(1px) rotate(-0.35deg); }
+  75% { transform: translateX(-1px) rotate(0.35deg); }
+}
+@keyframes buttonParty {
+  0%, 100% { transform: rotate(-3deg) scale(1); }
+  50% { transform: rotate(4deg) scale(1.05); }
+}
 @keyframes confettiFall {
   0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
   100% { transform: translateY(105vh) rotate(420deg); opacity: 0; }
@@ -816,6 +905,43 @@ body.is-dragging-order .add-card {
 @keyframes placeholderPulse {
   from { opacity: 0.55; transform: scale(0.995); }
   to { opacity: 0.82; transform: scale(1); }
+}
+body[data-animation-level="1"] .hero-card::before,
+body[data-animation-level="1"] .hero-card::after,
+body[data-animation-level="1"] .expanded-countdown::before,
+body[data-animation-level="1"] .expanded-countdown::after,
+body[data-animation-level="1"] .big-number.is-changing,
+body[data-animation-level="1"] .mixed-countdown.is-changing,
+body[data-animation-level="1"] .drag-placeholder,
+body[data-animation-level="1"] .confetti,
+body[data-animation-level="1"] .unit-spark,
+body[data-animation-level="1"] .expanded-countdown.unit-pop {
+  animation: none !important;
+}
+body[data-animation-level="1"] .confetti,
+body[data-animation-level="1"] .unit-spark {
+  display: none;
+}
+body[data-animation-level="4"] .event-card:not(.drag-ghost):not(.drag-source) {
+  animation: gentleBreathe 5.2s ease-in-out infinite;
+}
+body[data-animation-level="4"] .event-card:nth-child(2n) {
+  animation-delay: 480ms;
+}
+body[data-animation-level="5"] .event-card:not(.drag-ghost):not(.drag-source) {
+  animation: happyWiggle 3.2s ease-in-out infinite;
+}
+body[data-animation-level="5"] .event-card:nth-child(2n) {
+  animation-delay: 360ms;
+}
+body[data-animation-level="5"] .event-icon {
+  animation: iconBob 2.1s ease-in-out infinite;
+}
+body[data-animation-level="5"] .title-button strong {
+  animation: titleShimmy 2.7s ease-in-out infinite;
+}
+body[data-animation-level="5"] .add-button {
+  animation: buttonParty 1.6s ease-in-out infinite;
 }
 @media (max-width: 620px) {
   .app-shell {
@@ -870,7 +996,7 @@ body.is-dragging-order .add-card {
     width: 48px;
     height: 48px;
   }
-  .install-grid, .theme-grid {
+  .install-grid, .theme-grid, .animation-grid {
     grid-template-columns: 1fr 1fr;
   }
   .modal-panel {
@@ -879,5 +1005,13 @@ body.is-dragging-order .add-card {
   }
   .modal-card {
     max-height: 88vh;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
   }
 }

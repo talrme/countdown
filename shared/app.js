@@ -15,7 +15,7 @@
   const state = {
     boards: [],
     events: [],
-    settings: { board: "", theme: "pop", allowDragOrder: false },
+    settings: { board: "", theme: "pop", allowDragOrder: false, animationLevel: 3 },
     openEventIds: [],
     activeUnits: {},
     editingId: "",
@@ -36,6 +36,7 @@
     loadState();
     bindEvents();
     applyTheme();
+    applyAnimationLevel();
     render();
     requestBackendSnapshot({ reason: "load" });
     startSyncWindow(syncWindowMs);
@@ -74,6 +75,7 @@
     state.boards = normalizeBoards(localBoards);
     state.events = normalizeEvents(localEvents);
     state.settings = Object.assign(state.settings, local.settings || {});
+    state.settings.animationLevel = clampAnimationLevel(state.settings.animationLevel);
     state.activeUnits = local.activeUnits || {};
     state.openEventIds = Array.isArray(local.openEventIds) ? local.openEventIds : [];
 
@@ -174,6 +176,9 @@
       const themeChoice = target.closest("[data-theme-choice]");
       if (themeChoice) setTheme(themeChoice.getAttribute("data-theme-choice"));
 
+      const animationChoice = target.closest("[data-animation-level]");
+      if (animationChoice) setAnimationLevel(animationChoice.getAttribute("data-animation-level"));
+
       if (target.closest("[data-reset-device]")) resetDevice();
       if (target.closest("[data-copy-link]")) copyLink();
     });
@@ -250,6 +255,7 @@
     renderList();
     renderThemeButtons();
     renderDragToggle();
+    renderAnimationButtons();
     updateInstallManifest();
   }
 
@@ -366,6 +372,13 @@
   function renderDragToggle() {
     if (els.dragToggle) els.dragToggle.checked = Boolean(state.settings.allowDragOrder);
     document.body.classList.toggle("drag-order-enabled", Boolean(state.settings.allowDragOrder));
+  }
+
+  function renderAnimationButtons() {
+    document.querySelectorAll("[data-animation-level]").forEach((button) => {
+      button.classList.toggle("is-active", Number(button.getAttribute("data-animation-level")) === animationLevel());
+    });
+    applyAnimationLevel();
   }
 
   function sortedEvents() {
@@ -578,6 +591,7 @@
     syncEvent(event);
     startSyncWindow(syncWindowMs);
     render();
+    animateUnitChange(event.event_id);
   }
 
   function toggleCard(id) {
@@ -942,8 +956,29 @@
     renderThemeButtons();
   }
 
+  function setAnimationLevel(level) {
+    state.settings.animationLevel = clampAnimationLevel(level);
+    saveState();
+    applyAnimationLevel();
+    renderAnimationButtons();
+  }
+
   function applyTheme() {
     document.body.dataset.theme = state.settings.theme || "pop";
+  }
+
+  function applyAnimationLevel() {
+    document.body.dataset.animationLevel = String(animationLevel());
+  }
+
+  function animationLevel() {
+    return clampAnimationLevel(state.settings.animationLevel);
+  }
+
+  function clampAnimationLevel(value) {
+    const number = Math.round(Number(value));
+    if (!Number.isFinite(number)) return 3;
+    return Math.max(1, Math.min(5, number));
   }
 
   function resetDevice() {
@@ -1190,7 +1225,10 @@
 
   function celebrate(count) {
     if (!els.celebration) return;
-    for (let i = 0; i < count; i++) {
+    const level = animationLevel();
+    if (level <= 1) return;
+    const adjustedCount = level >= 5 ? Math.ceil(count * 1.6) : level === 2 ? Math.ceil(count * 0.55) : count;
+    for (let i = 0; i < adjustedCount; i++) {
       const dot = document.createElement("span");
       dot.className = "confetti";
       dot.style.left = Math.random() * 100 + "vw";
@@ -1199,6 +1237,33 @@
       els.celebration.appendChild(dot);
       window.setTimeout(() => dot.remove(), 1200);
     }
+  }
+
+  function animateUnitChange(eventId) {
+    const level = animationLevel();
+    if (level <= 1) return;
+    const card = document.querySelector('[data-event-card="' + cssEscape(eventId) + '"] .expanded-countdown');
+    if (!card) return;
+    card.classList.remove("unit-pop");
+    void card.offsetWidth;
+    card.classList.add("unit-pop");
+    window.setTimeout(() => card.classList.remove("unit-pop"), 760);
+
+    const sparkCounts = { 2: 5, 3: 9, 4: 14, 5: 22 };
+    const count = sparkCounts[level] || 8;
+    for (let i = 0; i < count; i++) {
+      const spark = document.createElement("span");
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 26 + Math.random() * (level >= 5 ? 96 : 58);
+      spark.className = "unit-spark";
+      spark.style.setProperty("--dx", Math.cos(angle) * distance + "px");
+      spark.style.setProperty("--dy", Math.sin(angle) * distance + "px");
+      spark.style.background = ["var(--accent)", "var(--accent-2)", "var(--accent-3)"][i % 3];
+      spark.style.animationDelay = Math.random() * 90 + "ms";
+      card.appendChild(spark);
+      window.setTimeout(() => spark.remove(), 1000);
+    }
+    if (level >= 5) celebrate(8);
   }
 
   function slug(text) {
