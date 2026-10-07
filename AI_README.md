@@ -22,6 +22,8 @@ Month displays use calendar-aware fractional months when there are leftover days
 
 Drag ordering is an optional device-local setting. It is off by default; when enabled, tile grab handles appear and reorder through the same Sheet-backed sort_order field as the Up/Down buttons.
 
+When drag ordering is enabled, card summaries intentionally use \`touch-action: none\` and pointer capture so phone browsers do not turn a vertical drag into page scrolling and cancel/drop the reorder gesture.
+
 Animation level is also device-local. It runs 1-5 with default 3: 1 is minimal/no animations, 5 is intentionally extra playful.
 
 ## Data Contract

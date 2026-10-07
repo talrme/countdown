@@ -322,6 +322,9 @@ body[data-theme="night"] .title-button strong {
 }
 body.drag-order-enabled .mini-summary {
   grid-template-columns: auto auto minmax(0, 1fr) auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .drag-grip {
   display: none;
@@ -337,6 +340,9 @@ body.drag-order-enabled .mini-summary {
   line-height: 0.72;
   letter-spacing: -0.2em;
   padding-right: 0.2em;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 body.drag-order-enabled .drag-grip {
   display: grid;

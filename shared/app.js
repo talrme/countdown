@@ -738,6 +738,8 @@
     state.drag = {
       id: card.getAttribute("data-event-card"),
       card,
+      pointerId: event.pointerId,
+      pointerTarget: summary,
       startX: event.clientX,
       startY: event.clientY,
       lastX: event.clientX,
@@ -746,6 +748,11 @@
       started: false,
       timer: window.setTimeout(() => startDrag(), 380)
     };
+    if (summary.setPointerCapture && event.pointerId !== undefined) {
+      try {
+        summary.setPointerCapture(event.pointerId);
+      } catch {}
+    }
     document.body.classList.add("is-pressing-order");
     if (immediate) {
       event.preventDefault();
@@ -756,6 +763,7 @@
   function onDragPointerMove(event) {
     const drag = state.drag;
     if (!drag) return;
+    if (drag.pointerId !== undefined && event.pointerId !== undefined && event.pointerId !== drag.pointerId) return;
     drag.lastX = event.clientX;
     drag.lastY = event.clientY;
     if (!drag.started) {
@@ -780,6 +788,7 @@
   function onDragPointerUp(event) {
     const drag = state.drag;
     if (!drag) return;
+    if (drag.pointerId !== undefined && event.pointerId !== undefined && event.pointerId !== drag.pointerId) return;
     drag.lastX = event.clientX;
     drag.lastY = event.clientY;
     if (!drag.started) {
@@ -906,6 +915,11 @@
     if (drag.card) {
       drag.card.classList.remove("drag-source");
       drag.card.style.display = "";
+    }
+    if (drag.pointerTarget && drag.pointerTarget.releasePointerCapture && drag.pointerId !== undefined) {
+      try {
+        drag.pointerTarget.releasePointerCapture(drag.pointerId);
+      } catch {}
     }
     document.body.classList.remove("is-dragging-order");
     document.body.classList.remove("is-pressing-order");
