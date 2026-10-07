@@ -154,7 +154,7 @@
       if (openEvent) openEventModal(openEvent.getAttribute("data-open-event"));
       if (target.closest("[data-open-settings]")) openModal("settings");
       if (target.closest("[data-open-share]")) openShare();
-      if (target.closest("[data-close-modal]") || target.closest("[data-cancel-delete]") || target === els.backdrop) closeModals();
+      if (target.closest("[data-close-modal]") || target.closest("[data-cancel-delete]") || target === els.backdrop || target.classList.contains("modal-panel")) closeModals();
 
       const unit = target.closest("[data-unit]");
       if (unit) setUnit(unit.getAttribute("data-unit"), unit.getAttribute("data-unit-event"));
