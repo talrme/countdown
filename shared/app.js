@@ -595,11 +595,7 @@
     const event = state.events.find((item) => item.event_id === eventId) || sortedEvents()[0];
     if (!event) return;
     state.activeUnits[event.event_id] = unit;
-    event.default_unit = unit;
-    event.updated_at = new Date().toISOString();
     saveState();
-    syncEvent(event);
-    startSyncWindow(syncWindowMs);
     render();
     animateUnitChange(event.event_id);
   }
