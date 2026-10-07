@@ -642,6 +642,7 @@ body.is-dragging-order .drag-grip {
   padding: 16px;
   display: grid;
   gap: 14px;
+  animation: modalPop 180ms cubic-bezier(.2,1.2,.3,1);
 }
 .modal-header {
   display: flex;
@@ -888,6 +889,66 @@ body.is-dragging-order .add-card {
   border-radius: 14px;
   padding: 12px;
 }
+.share-card {
+  gap: 16px;
+}
+.save-app-panel,
+.share-link-panel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--paper) 88%, transparent), color-mix(in srgb, var(--accent-3) 16%, var(--paper))),
+    var(--paper);
+}
+.share-link-panel {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--paper) 90%, transparent), color-mix(in srgb, var(--accent-2) 17%, var(--paper))),
+    var(--paper);
+}
+.save-app-top {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+.save-app-icon {
+  width: 62px;
+  height: 62px;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+}
+.save-app-top strong,
+.share-section-heading strong {
+  display: block;
+  color: var(--ink);
+  font-size: 1.08rem;
+  font-weight: 1000;
+}
+.save-app-top p,
+.share-section-heading p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.34;
+}
+.save-steps section {
+  background: color-mix(in srgb, var(--paper) 78%, white);
+}
+body[data-theme="night"] .save-steps section {
+  background: color-mix(in srgb, var(--paper) 88%, #000);
+}
+.share-link-panel label {
+  gap: 7px;
+}
+.copy-link-button {
+  justify-self: stretch;
+}
 .celebration-layer {
   position: fixed;
   inset: 0;
@@ -953,6 +1014,10 @@ body.is-dragging-order .add-card {
 @keyframes placeholderPulse {
   from { opacity: 0.55; transform: scale(0.995); }
   to { opacity: 0.82; transform: scale(1); }
+}
+@keyframes modalPop {
+  0% { transform: translateY(10px) scale(0.96); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 body[data-animation-level="1"] .hero-card::before,
 body[data-animation-level="1"] .hero-card::after,
@@ -1048,11 +1113,23 @@ body[data-animation-level="5"] .add-button {
     grid-template-columns: 1fr 1fr;
   }
   .modal-panel {
-    align-items: end;
-    padding: 10px;
+    place-items: center;
+    padding: 14px 10px;
   }
   .modal-card {
     max-height: 88vh;
+  }
+  .share-card {
+    gap: 12px;
+  }
+  .save-app-panel,
+  .share-link-panel {
+    padding: 12px;
+  }
+  .save-app-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

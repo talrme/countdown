@@ -29,9 +29,9 @@
     </section>
 
     <footer class="bottom-tools">
-      <button type="button" data-open-share aria-label="Share or save">
+      <button type="button" data-open-share aria-label="Save or share">
         <span aria-hidden="true">↗</span>
-        <span>Share / Save</span>
+        <span>Save / Share</span>
       </button>
       <button type="button" data-open-settings aria-label="Open settings">
         <span aria-hidden="true">⚙</span>
@@ -155,30 +155,45 @@
   </section>
 
   <section class="modal-panel share-modal" data-share-modal hidden role="dialog" aria-modal="true" aria-labelledby="share-title">
-    <div class="modal-card">
+    <div class="modal-card share-card">
       <header class="modal-header">
         <div>
-          <p class="eyebrow">Send it</p>
-          <h2 id="share-title">Share / Save</h2>
+          <p class="eyebrow">Keep it handy</p>
+          <h2 id="share-title">Save / Share</h2>
         </div>
         <button type="button" class="x-button" data-close-modal aria-label="Close">×</button>
       </header>
-      <label>
-        <span>Board link</span>
-        <input data-share-url readonly>
-      </label>
-      <button type="button" class="primary" data-copy-link>Copy link</button>
-      <p class="copy-status" data-copy-status aria-live="polite"></p>
-      <div class="install-grid">
-        <section>
-          <strong>iPhone / iPad</strong>
-          <p>Open in Safari, tap Share, then Add to Home Screen.</p>
-        </section>
-        <section>
-          <strong>Android</strong>
-          <p>Open in Chrome, tap the menu, then Add to Home screen or Install app.</p>
-        </section>
-      </div>
+      <section class="save-app-panel">
+        <div class="save-app-top">
+          <img src="countdown-icon.png" alt="" class="save-app-icon" aria-hidden="true">
+          <div>
+            <strong>Save as Application</strong>
+            <p>Add this countdown board to your phone so it opens like a small app.</p>
+          </div>
+        </div>
+        <div class="install-grid save-steps">
+          <section>
+            <strong>iPhone / iPad</strong>
+            <p>Open in Safari, tap Share, then Add to Home Screen.</p>
+          </section>
+          <section>
+            <strong>Android</strong>
+            <p>Open in Chrome, tap the menu, then Add to Home screen or Install app.</p>
+          </section>
+        </div>
+      </section>
+      <section class="share-link-panel">
+        <div class="share-section-heading">
+          <strong>Share</strong>
+          <p>Copy a link to this exact countdown board.</p>
+        </div>
+        <label>
+          <span>Board link</span>
+          <input data-share-url readonly>
+        </label>
+        <button type="button" class="primary copy-link-button" data-copy-link>Copy link</button>
+        <p class="copy-status" data-copy-status aria-live="polite"></p>
+      </section>
     </div>
   </section>
 
